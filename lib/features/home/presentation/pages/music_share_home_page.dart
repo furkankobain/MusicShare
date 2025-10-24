@@ -41,7 +41,9 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
 
   Future<void> _loadTurkeyData() async {
     // Load Turkey top tracks
-    setState(() => _isLoadingTracks = true);
+    if (mounted) {
+      setState(() => _isLoadingTracks = true);
+    }
     try {
       final tracks = await EnhancedSpotifyService.getTurkeyTopTracks();
       if (mounted) {
@@ -57,7 +59,9 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
     }
     
     // Load Turkey top albums
-    setState(() => _isLoadingAlbums = true);
+    if (mounted) {
+      setState(() => _isLoadingAlbums = true);
+    }
     try {
       final albums = await EnhancedSpotifyService.getTurkeyTopAlbums();
       if (mounted) {
@@ -304,6 +308,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
               : null;
           
           return _buildSongCard(
+            track,
             track['name'] ?? 'Unknown Track',
             artistName,
             isDark,
@@ -377,11 +382,15 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   }
 
   // Şarkı Kartı
-  Widget _buildSongCard(String title, String artist, bool isDark, {String? rankBadge, String? imageUrl}) {
-    return Container(
-      width: 140,
-      margin: const EdgeInsets.only(right: 12),
-      child: Column(
+  Widget _buildSongCard(Map<String, dynamic> track, String title, String artist, bool isDark, {String? rankBadge, String? imageUrl}) {
+    return GestureDetector(
+      onTap: () {
+        context.push('/track-detail', extra: track);
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Kapak ve Sıralama Badge
@@ -452,6 +461,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             overflow: TextOverflow.ellipsis,
           ),
         ],
+        ),
       ),
     );
   }

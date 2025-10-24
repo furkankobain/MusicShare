@@ -504,12 +504,19 @@ class EnhancedSpotifyService {
   /// Save track to user's library
   static Future<bool> saveTrack(String trackId) async {
     try {
-      if (!_isConnected || _accessToken == null) return false;
-
-      // Mock save operation - replace with real API call
-      await Future.delayed(const Duration(milliseconds: 500));
-      return true;
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.put(
+        '${AppConstants.baseUrl}/me/tracks',
+        queryParameters: {'ids': trackId},
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      return response.statusCode == 200;
     } catch (e) {
+      print('Error saving track: $e');
       return false;
     }
   }
@@ -517,12 +524,44 @@ class EnhancedSpotifyService {
   /// Remove track from user's library
   static Future<bool> removeTrack(String trackId) async {
     try {
-      if (!_isConnected || _accessToken == null) return false;
-
-      // Mock remove operation - replace with real API call
-      await Future.delayed(const Duration(milliseconds: 500));
-      return true;
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.delete(
+        '${AppConstants.baseUrl}/me/tracks',
+        queryParameters: {'ids': trackId},
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      return response.statusCode == 200;
     } catch (e) {
+      print('Error removing track: $e');
+      return false;
+    }
+  }
+  
+  /// Check if track is saved in user's library
+  static Future<bool> checkSavedTrack(String trackId) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/me/tracks/contains',
+        queryParameters: {'ids': trackId},
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200 && response.data is List) {
+        final results = response.data as List;
+        return results.isNotEmpty && results[0] == true;
+      }
+      
+      return false;
+    } catch (e) {
+      print('Error checking saved track: $e');
       return false;
     }
   }
@@ -618,6 +657,82 @@ class EnhancedSpotifyService {
     } catch (e) {
       print('Error searching: $e');
       return {};
+    }
+  }
+  
+  /// Search for tracks only
+  static Future<List<Map<String, dynamic>>> searchTracks(String query, {int limit = 20}) async {
+    try {
+      // Try to use user token first, fallback to client credentials
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/search',
+          queryParameters: {
+            'q': query,
+            'type': 'track',
+            'limit': limit,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['tracks']?['items'] != null) {
+          final items = response.data['tracks']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error searching tracks: $e');
+      return [];
+    }
+  }
+  
+  /// Search for artists only
+  static Future<List<Map<String, dynamic>>> searchArtists(String query, {int limit = 20}) async {
+    try {
+      // Try to use user token first, fallback to client credentials
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/search',
+          queryParameters: {
+            'q': query,
+            'type': 'artist',
+            'limit': limit,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['artists']?['items'] != null) {
+          final items = response.data['artists']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error searching artists: $e');
+      return [];
     }
   }
   

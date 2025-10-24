@@ -24,6 +24,7 @@ import 'features/discover/presentation/pages/discover_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/enhanced_profile_page.dart';
 import 'features/search/presentation/pages/advanced_search_page.dart';
+import 'features/search/presentation/pages/modern_search_page.dart';
 import 'features/statistics/presentation/pages/statistics_page.dart';
 import 'features/music/presentation/pages/my_ratings_page.dart';
 import 'features/settings/presentation/pages/settings_page.dart';
@@ -42,6 +43,10 @@ import 'features/music/presentation/pages/spotify_albums_page.dart';
 import 'features/music/presentation/pages/create_playlist_page.dart';
 import 'features/music/presentation/pages/turkey_top_tracks_page.dart';
 import 'features/music/presentation/pages/turkey_top_albums_page.dart';
+import 'features/music/presentation/pages/track_detail_page.dart';
+import 'features/music/presentation/pages/artist_profile_page.dart';
+import 'features/music/presentation/pages/album_detail_page.dart';
+import 'features/favorites/presentation/pages/favorites_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -149,7 +154,7 @@ final _router = GoRouter(
         GoRoute(
           path: '/search',
           name: 'search',
-          builder: (context, state) => const AdvancedSearchPage(),
+          builder: (context, state) => const ModernSearchPage(),
         ),
         GoRoute(
           path: '/discover',
@@ -197,6 +202,14 @@ final _router = GoRouter(
         builder: (context, state) => const SpotifyAlbumsPage(),
       ),
       GoRoute(
+        path: '/track-detail',
+        name: 'track-detail',
+        builder: (context, state) {
+          final track = state.extra as Map<String, dynamic>;
+          return TrackDetailPage(track: track);
+        },
+      ),
+      GoRoute(
         path: '/create-playlist',
         name: 'create-playlist',
         builder: (context, state) => const CreatePlaylistPage(),
@@ -210,6 +223,27 @@ final _router = GoRouter(
         path: '/turkey-top-albums',
         name: 'turkey-top-albums',
         builder: (context, state) => const TurkeyTopAlbumsPage(),
+      ),
+      GoRoute(
+        path: '/artist-profile',
+        name: 'artist-profile',
+        builder: (context, state) {
+          final artist = state.extra as Map<String, dynamic>;
+          return ArtistProfilePage(artist: artist);
+        },
+      ),
+      GoRoute(
+        path: '/album-detail',
+        name: 'album-detail',
+        builder: (context, state) {
+          final album = state.extra as Map<String, dynamic>;
+          return AlbumDetailPage(album: album);
+        },
+      ),
+      GoRoute(
+        path: '/favorites',
+        name: 'favorites',
+        builder: (context, state) => const FavoritesPage(),
       ),
     GoRoute(
       path: '/settings',

@@ -78,6 +78,7 @@ dependencies:
   
   # Push Notifications
   flutter_local_notifications: ^17.2.3
+  audioplayers: ^6.5.1
 
 dev_dependencies:
   flutter_test:

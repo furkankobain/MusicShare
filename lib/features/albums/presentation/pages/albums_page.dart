@@ -26,7 +26,9 @@ class _AlbumsPageState extends ConsumerState<AlbumsPage> {
 
   Future<void> _loadData() async {
     // Load Turkey albums
-    setState(() => _isLoadingTurkey = true);
+    if (mounted) {
+      setState(() => _isLoadingTurkey = true);
+    }
     try {
       final albums = await EnhancedSpotifyService.getTurkeyTopAlbums(limit: 20);
       if (mounted) {
@@ -42,7 +44,9 @@ class _AlbumsPageState extends ConsumerState<AlbumsPage> {
     }
 
     // Load Global albums
-    setState(() => _isLoadingGlobal = true);
+    if (mounted) {
+      setState(() => _isLoadingGlobal = true);
+    }
     try {
       final albums = await EnhancedSpotifyService.getGlobalTopAlbums(limit: 20);
       if (mounted) {
