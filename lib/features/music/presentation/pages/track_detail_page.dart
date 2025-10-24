@@ -7,6 +7,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/favorites_service.dart';
+import '../../../../shared/services/profile_service.dart';
 
 class TrackDetailPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> track;
@@ -23,6 +24,7 @@ class TrackDetailPage extends ConsumerStatefulWidget {
 class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
   double _userRating = 0;
   bool _isFavorite = false;
+  bool _isPinned = false;
   bool _isSavedToSpotify = false;
   bool _isCheckingSpotify = true;
   bool _isPlaying = false;
@@ -34,6 +36,7 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     super.initState();
     _checkSpotifyStatus();
     _checkFavoriteStatus();
+    _checkPinnedStatus();
     _setupAudioPlayer();
   }
 
@@ -53,11 +56,34 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     }
   }
 
+  Future<void> _checkPinnedStatus() async {
+    final trackId = widget.track['id'] as String?;
+    if (trackId != null) {
+      final isPinned = await ProfileService.isTrackPinned(trackId);
+      if (mounted) {
+        setState(() => _isPinned = isPinned);
+      }
+    }
+  }
+
   Future<void> _toggleFavorite() async {
+    // First add/remove from favorites
     final success = await FavoritesService.toggleTrackFavorite(widget.track);
     
     if (success && mounted) {
-      setState(() => _isFavorite = !_isFavorite);
+      final newFavoriteStatus = !_isFavorite;
+      setState(() => _isFavorite = newFavoriteStatus);
+      
+      // If adding to favorites, also add to pinned tracks (if not already pinned and space available)
+      if (newFavoriteStatus) {
+        final currentPinned = await ProfileService.getPinnedTracks();
+        if (currentPinned.length < 4 && !_isPinned) {
+          final pinSuccess = await ProfileService.addPinnedTrack(widget.track);
+          if (pinSuccess && mounted) {
+            setState(() => _isPinned = true);
+          }
+        }
+      }
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

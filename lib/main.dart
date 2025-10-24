@@ -23,6 +23,7 @@ import 'features/home/presentation/pages/music_share_home_page.dart';
 import 'features/discover/presentation/pages/discover_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/enhanced_profile_page.dart';
+import 'features/profile/presentation/pages/letterboxd_profile_page.dart';
 import 'features/search/presentation/pages/advanced_search_page.dart';
 import 'features/search/presentation/pages/modern_search_page.dart';
 import 'features/statistics/presentation/pages/statistics_page.dart';
@@ -297,7 +298,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const MusicShareHomePage(),
     const DiscoverPage(),
-    const EnhancedProfilePage(),
+    const LetterboxdProfilePage(),
   ];
 
   @override
