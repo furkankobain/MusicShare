@@ -905,36 +905,4 @@ class EnhancedSpotifyService {
       return null;
     }
   }
-  
-  /// Search for tracks, albums, or artists
-  static Future<Map<String, dynamic>> search({
-    required String query,
-    List<String> types = const ['track', 'album', 'artist'],
-    int limit = 20,
-  }) async {
-    try {
-      await _checkAndRefreshToken();
-      
-      final response = await _dio.get(
-        '${AppConstants.baseUrl}/search',
-        queryParameters: {
-          'q': query,
-          'type': types.join(','),
-          'limit': limit,
-        },
-        options: Options(
-          headers: {'Authorization': 'Bearer $_accessToken'},
-        ),
-      );
-      
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      }
-      
-      return {};
-    } catch (e) {
-      print('Error searching: $e');
-      return {};
-    }
-  }
 }
