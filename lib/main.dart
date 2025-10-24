@@ -37,6 +37,8 @@ import 'features/social/presentation/pages/social_feed_page.dart';
 import 'features/diary/presentation/pages/music_diary_page.dart';
 import 'features/lists/presentation/pages/music_lists_page.dart';
 import 'features/notes/presentation/pages/notes_page.dart';
+import 'features/music/presentation/pages/spotify_tracks_page.dart';
+import 'features/music/presentation/pages/spotify_albums_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -180,6 +182,16 @@ final _router = GoRouter(
         path: '/notes',
         name: 'notes',
         builder: (context, state) => const NotesPage(),
+      ),
+      GoRoute(
+        path: '/spotify-tracks',
+        name: 'spotify-tracks',
+        builder: (context, state) => const SpotifyTracksPage(),
+      ),
+      GoRoute(
+        path: '/spotify-albums',
+        name: 'spotify-albums',
+        builder: (context, state) => const SpotifyAlbumsPage(),
       ),
     GoRoute(
       path: '/settings',
