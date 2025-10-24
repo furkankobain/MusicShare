@@ -8,6 +8,7 @@ import '../../../notes/presentation/pages/notes_page.dart';
 import '../../../albums/presentation/pages/albums_page.dart';
 import '../../../discover/presentation/pages/enhanced_discover_page.dart';
 import '../../../../shared/widgets/spotify/spotify_connect_button.dart';
+import '../../../../shared/services/enhanced_spotify_service.dart';
 
 class MusicShareHomePage extends ConsumerStatefulWidget {
   const MusicShareHomePage({super.key});
@@ -19,6 +20,10 @@ class MusicShareHomePage extends ConsumerStatefulWidget {
 class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTabIndex = 0;
+  List<Map<String, dynamic>> _turkeyTopTracks = [];
+  List<Map<String, dynamic>> _turkeyTopAlbums = [];
+  bool _isLoadingTracks = true;
+  bool _isLoadingAlbums = true;
 
   final List<String> _tabs = ['Şarkılar', 'Notes', 'Albümler', 'Aktivite'];
 
@@ -31,6 +36,41 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
         _selectedTabIndex = _tabController.index;
       });
     });
+    _loadTurkeyData();
+  }
+
+  Future<void> _loadTurkeyData() async {
+    // Load Turkey top tracks
+    setState(() => _isLoadingTracks = true);
+    try {
+      final tracks = await EnhancedSpotifyService.getTurkeyTopTracks();
+      if (mounted) {
+        setState(() {
+          _turkeyTopTracks = tracks;
+          _isLoadingTracks = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingTracks = false);
+      }
+    }
+    
+    // Load Turkey top albums
+    setState(() => _isLoadingAlbums = true);
+    try {
+      final albums = await EnhancedSpotifyService.getTurkeyTopAlbums();
+      if (mounted) {
+        setState(() {
+          _turkeyTopAlbums = albums;
+          _isLoadingAlbums = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingAlbums = false);
+      }
+    }
   }
 
   @override
@@ -137,17 +177,12 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Spotify Bağlantı Butonu
-            const SpotifyConnectButton(),
-            
-            const SizedBox(height: 16),
-            
             // Haftanın Popüler Şarkıları
             _buildSectionHeader(
               'Haftanın Popüler Şarkıları',
               isDark,
               onSeeAll: () {
-                // TODO: Navigate to popular songs
+                context.push('/turkey-top-tracks');
               },
             ),
             const SizedBox(height: 12),
@@ -170,10 +205,10 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             
             // Popüler Albümler
             _buildSectionHeader(
-              'Popüler Albümler',
+              'Türkiye\'de Popüler Albümler',
               isDark,
               onSeeAll: () {
-                // TODO: Navigate to popular albums
+                context.push('/turkey-top-albums');
               },
             ),
             const SizedBox(height: 12),
@@ -193,30 +228,41 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (onSeeAll != null)
             TextButton(
               onPressed: onSeeAll,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Tümünü Gör',
+                    'Tümü',
                     style: TextStyle(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
                   ),
                   const SizedBox(width: 4),
                   Icon(
                     Icons.arrow_forward_ios,
-                    size: 14,
+                    size: 12,
                     color: AppTheme.primaryColor,
                   ),
                 ],
@@ -229,18 +275,40 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
 
   // Popüler Şarkılar Bölümü
   Widget _buildPopularSongsSection(bool isDark) {
+    if (_isLoadingTracks) {
+      return SizedBox(
+        height: 220,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    final tracksToShow = _turkeyTopTracks.take(10).toList();
+
     return SizedBox(
       height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 5,
+        itemCount: tracksToShow.length,
         itemBuilder: (context, index) {
+          final track = tracksToShow[index];
+          final artistName = (track['artists'] as List?)?.isNotEmpty == true
+              ? track['artists'][0]['name']
+              : 'Unknown Artist';
+          final imageUrl = (track['album']?['images'] as List?)?.isNotEmpty == true
+              ? track['album']['images'][0]['url']
+              : null;
+          
           return _buildSongCard(
-            'Şarkı ${index + 1}',
-            'Sanatçı Adı',
+            track['name'] ?? 'Unknown Track',
+            artistName,
             isDark,
             rankBadge: '${index + 1}',
+            imageUrl: imageUrl,
           );
         },
       ),
@@ -269,17 +337,39 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
 
   // Popüler Albümler Bölümü
   Widget _buildPopularAlbumsSection(bool isDark) {
+    if (_isLoadingAlbums) {
+      return SizedBox(
+        height: 220,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    final albumsToShow = _turkeyTopAlbums.take(10).toList();
+
     return SizedBox(
       height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 5,
+        itemCount: albumsToShow.length,
         itemBuilder: (context, index) {
+          final album = albumsToShow[index];
+          final artistName = (album['artists'] as List?)?.isNotEmpty == true
+              ? album['artists'][0]['name']
+              : 'Unknown Artist';
+          final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+              ? album['images'][0]['url']
+              : null;
+          
           return _buildAlbumCard(
-            'Albüm ${index + 1}',
-            'Sanatçı Adı',
+            album['name'] ?? 'Unknown Album',
+            artistName,
             isDark,
+            imageUrl: imageUrl,
           );
         },
       ),
@@ -287,7 +377,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   }
 
   // Şarkı Kartı
-  Widget _buildSongCard(String title, String artist, bool isDark, {String? rankBadge}) {
+  Widget _buildSongCard(String title, String artist, bool isDark, {String? rankBadge, String? imageUrl}) {
     return Container(
       width: 140,
       margin: const EdgeInsets.only(right: 12),
@@ -303,12 +393,20 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                 decoration: BoxDecoration(
                   color: isDark ? Colors.grey[800] : Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
+                  image: imageUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: Icon(
-                  Icons.music_note,
-                  size: 50,
-                  color: isDark ? Colors.grey[600] : Colors.grey[400],
-                ),
+                child: imageUrl == null
+                    ? Icon(
+                        Icons.music_note,
+                        size: 50,
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      )
+                    : null,
               ),
               if (rankBadge != null)
                 Positioned(
@@ -461,7 +559,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   }
 
   // Albüm Kartı
-  Widget _buildAlbumCard(String title, String artist, bool isDark) {
+  Widget _buildAlbumCard(String title, String artist, bool isDark, {String? imageUrl}) {
     return Container(
       width: 140,
       margin: const EdgeInsets.only(right: 12),
@@ -474,12 +572,20 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             decoration: BoxDecoration(
               color: isDark ? Colors.grey[800] : Colors.grey[200],
               borderRadius: BorderRadius.circular(12),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Icon(
-              Icons.album,
-              size: 50,
-              color: isDark ? Colors.grey[600] : Colors.grey[400],
-            ),
+            child: imageUrl == null
+                ? Icon(
+                    Icons.album,
+                    size: 50,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  )
+                : null,
           ),
           const SizedBox(height: 8),
           Text(

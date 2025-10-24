@@ -39,6 +39,9 @@ import 'features/lists/presentation/pages/music_lists_page.dart';
 import 'features/notes/presentation/pages/notes_page.dart';
 import 'features/music/presentation/pages/spotify_tracks_page.dart';
 import 'features/music/presentation/pages/spotify_albums_page.dart';
+import 'features/music/presentation/pages/create_playlist_page.dart';
+import 'features/music/presentation/pages/turkey_top_tracks_page.dart';
+import 'features/music/presentation/pages/turkey_top_albums_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +195,21 @@ final _router = GoRouter(
         path: '/spotify-albums',
         name: 'spotify-albums',
         builder: (context, state) => const SpotifyAlbumsPage(),
+      ),
+      GoRoute(
+        path: '/create-playlist',
+        name: 'create-playlist',
+        builder: (context, state) => const CreatePlaylistPage(),
+      ),
+      GoRoute(
+        path: '/turkey-top-tracks',
+        name: 'turkey-top-tracks',
+        builder: (context, state) => const TurkeyTopTracksPage(),
+      ),
+      GoRoute(
+        path: '/turkey-top-albums',
+        name: 'turkey-top-albums',
+        builder: (context, state) => const TurkeyTopAlbumsPage(),
       ),
     GoRoute(
       path: '/settings',

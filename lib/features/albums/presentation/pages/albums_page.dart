@@ -3,19 +3,70 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/services/enhanced_spotify_service.dart';
 
-class AlbumsPage extends ConsumerWidget {
+class AlbumsPage extends ConsumerStatefulWidget {
   const AlbumsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AlbumsPage> createState() => _AlbumsPageState();
+}
+
+class _AlbumsPageState extends ConsumerState<AlbumsPage> {
+  List<Map<String, dynamic>> _turkeyAlbums = [];
+  List<Map<String, dynamic>> _globalAlbums = [];
+  bool _isLoadingTurkey = true;
+  bool _isLoadingGlobal = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    // Load Turkey albums
+    setState(() => _isLoadingTurkey = true);
+    try {
+      final albums = await EnhancedSpotifyService.getTurkeyTopAlbums(limit: 20);
+      if (mounted) {
+        setState(() {
+          _turkeyAlbums = albums;
+          _isLoadingTurkey = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingTurkey = false);
+      }
+    }
+
+    // Load Global albums
+    setState(() => _isLoadingGlobal = true);
+    try {
+      final albums = await EnhancedSpotifyService.getGlobalTopAlbums(limit: 20);
+      if (mounted) {
+        setState(() {
+          _globalAlbums = albums;
+          _isLoadingGlobal = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingGlobal = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? AppTheme.backgroundColor : Colors.grey[50],
       body: RefreshIndicator(
         onRefresh: () async {
-          await Future.delayed(const Duration(seconds: 1));
+          await _loadData();
         },
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -32,7 +83,7 @@ class AlbumsPage extends ConsumerWidget {
                 },
               ),
               const SizedBox(height: 12),
-              _buildAlbumsList(isDark, isTurkeyTop: true),
+              _buildTurkeyAlbumsList(isDark),
               
               const SizedBox(height: 32),
               
@@ -42,11 +93,11 @@ class AlbumsPage extends ConsumerWidget {
                 '🌍 Global Popüler',
                 isDark,
                 onSeeAll: () {
-                  // TODO: Navigate to full list
+                  context.push('/global-top-albums');
                 },
               ),
               const SizedBox(height: 12),
-              _buildAlbumsList(isDark, isGlobal: true),
+              _buildGlobalAlbumsList(isDark),
               
               const SizedBox(height: 32),
               
@@ -115,20 +166,84 @@ class AlbumsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildAlbumsList(bool isDark, {bool isTurkeyTop = false, bool isGlobal = false}) {
+  Widget _buildTurkeyAlbumsList(bool isDark) {
+    if (_isLoadingTurkey) {
+      return SizedBox(
+        height: 240,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    final albums = _turkeyAlbums.take(10).toList();
+
     return SizedBox(
       height: 240,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: 10,
+        itemCount: albums.length,
         itemBuilder: (context, index) {
+          final album = albums[index];
+          final artistName = (album['artists'] as List?)?.isNotEmpty == true
+              ? album['artists'][0]['name']
+              : 'Unknown Artist';
+          final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+              ? album['images'][0]['url']
+              : null;
+
           return _buildAlbumCard(
-            'Albüm ${index + 1}',
-            'Sanatçı Adı',
+            album['name'] ?? 'Unknown Album',
+            artistName,
             isDark,
-            rankBadge: isTurkeyTop || isGlobal ? '${index + 1}' : null,
-            rating: 4.5 - (index * 0.1),
+            rankBadge: '${index + 1}',
+            rating: 4.5 - (index * 0.05),
+            imageUrl: imageUrl,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGlobalAlbumsList(bool isDark) {
+    if (_isLoadingGlobal) {
+      return SizedBox(
+        height: 240,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    final albums = _globalAlbums.take(10).toList();
+
+    return SizedBox(
+      height: 240,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: albums.length,
+        itemBuilder: (context, index) {
+          final album = albums[index];
+          final artistName = (album['artists'] as List?)?.isNotEmpty == true
+              ? album['artists'][0]['name']
+              : 'Unknown Artist';
+          final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+              ? album['images'][0]['url']
+              : null;
+
+          return _buildAlbumCard(
+            album['name'] ?? 'Unknown Album',
+            artistName,
+            isDark,
+            rankBadge: '${index + 1}',
+            rating: 4.5 - (index * 0.05),
+            imageUrl: imageUrl,
           );
         },
       ),
@@ -160,6 +275,7 @@ class AlbumsPage extends ConsumerWidget {
     bool isDark, {
     String? rankBadge,
     double rating = 4.5,
+    String? imageUrl,
   }) {
     return Container(
       width: 160,
@@ -183,12 +299,20 @@ class AlbumsPage extends ConsumerWidget {
                       offset: const Offset(0, 4),
                     ),
                   ],
+                  image: imageUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: Icon(
-                  Icons.album,
-                  size: 60,
-                  color: isDark ? Colors.grey[600] : Colors.grey[400],
-                ),
+                child: imageUrl == null
+                    ? Icon(
+                        Icons.album,
+                        size: 60,
+                        color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      )
+                    : null,
               ),
               if (rankBadge != null)
                 Positioned(

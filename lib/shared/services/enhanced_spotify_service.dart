@@ -905,4 +905,353 @@ class EnhancedSpotifyService {
       return null;
     }
   }
+  
+  /// Get Client Credentials token (no user authentication required)
+  static Future<String?> _getClientCredentialsToken() async {
+    try {
+      final credentials = base64Encode(utf8.encode('$_clientId:$_clientSecret'));
+      
+      final response = await _dio.post(
+        AppConstants.tokenUrl,
+        options: Options(
+          headers: {
+            'Authorization': 'Basic $credentials',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        ),
+        data: {'grant_type': 'client_credentials'},
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data['access_token'] as String?;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error getting client credentials token: $e');
+      return null;
+    }
+  }
+
+  /// Get Turkey's top tracks from Spotify charts
+  static Future<List<Map<String, dynamic>>> getTurkeyTopTracks({
+    int limit = 50,
+  }) async {
+    print('\n=== Getting Turkey Top Tracks ===');
+    print('Limit: $limit');
+    
+    try {
+      // Try to get client credentials token
+      String? token = await _getClientCredentialsToken();
+      
+      if (token != null) {
+        print('Token obtained successfully');
+        
+        // Use search API with popular Turkish artists to get trending tracks
+        final popularArtists = [
+          'Tarkan', 'Ezhel', 'Mabel Matiz', 'Semicenk', 'Murda',
+          'Melek Mosso', 'Hadise', 'Mustafa Sandal', 'Aleyna Tilki'
+        ];
+        
+        List<Map<String, dynamic>> allTracks = [];
+        
+        for (var artist in popularArtists) {
+          try {
+            final response = await _dio.get(
+              '${AppConstants.baseUrl}/search',
+              queryParameters: {
+                'q': 'artist:$artist',
+                'type': 'track',
+                'market': 'TR',
+                'limit': 5,
+              },
+              options: Options(
+                headers: {'Authorization': 'Bearer $token'},
+              ),
+            );
+            
+            if (response.statusCode == 200 && response.data['tracks']?['items'] != null) {
+              final tracks = response.data['tracks']['items'] as List;
+              allTracks.addAll(tracks.cast<Map<String, dynamic>>());
+            }
+          } catch (e) {
+            print('Failed to fetch tracks for $artist: $e');
+          }
+        }
+        
+        if (allTracks.isNotEmpty) {
+          // Sort by popularity and take top tracks
+          allTracks.sort((a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
+          final topTracks = allTracks.take(limit).toList();
+          print('Successfully fetched ${topTracks.length} tracks from Spotify search');
+          return topTracks;
+        }
+      } else {
+        print('Failed to get token, using mock data');
+      }
+    } catch (e) {
+      print('Error fetching Turkey top tracks: $e');
+    }
+    
+    print('Falling back to mock data');
+    return _getMockTurkeyTopTracks(limit);
+    
+    /* Uncomment when Spotify API is ready:
+    try {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/playlists/37i9dQZEVXbMDoHDwVN2tF/tracks',
+          queryParameters: {'limit': limit},
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200) {
+          final items = response.data['items'] as List;
+          return items
+              .where((item) => item['track'] != null)
+              .map((item) => item['track'] as Map<String, dynamic>)
+              .toList();
+        }
+      }
+      
+      return _getMockTurkeyTopTracks(limit);
+    } catch (e) {
+      print('Error fetching Turkey top tracks: $e');
+      return _getMockTurkeyTopTracks(limit);
+    }
+    */
+  }
+  
+  /// Get Turkey's top albums
+  static Future<List<Map<String, dynamic>>> getTurkeyTopAlbums({
+    int limit = 50,
+  }) async {
+    print('\n=== Getting Turkey Top Albums ===');
+    print('Limit: $limit');
+    
+    try {
+      // Try to get client credentials token
+      String? token = await _getClientCredentialsToken();
+      
+      if (token != null) {
+        print('Token obtained successfully');
+        
+        // Search for albums by popular Turkish artists
+        final popularArtists = [
+          'Tarkan', 'Ezhel', 'Mabel Matiz', 'Semicenk', 'Murda',
+          'Melek Mosso', 'Hadise', 'Teoman', 'Sezen Aksu', 'Mustafa Sandal'
+        ];
+        
+        List<Map<String, dynamic>> allAlbums = [];
+        
+        for (var artist in popularArtists) {
+          try {
+            final response = await _dio.get(
+              '${AppConstants.baseUrl}/search',
+              queryParameters: {
+                'q': 'artist:$artist',
+                'type': 'album',
+                'market': 'TR',
+                'limit': 5,
+              },
+              options: Options(
+                headers: {'Authorization': 'Bearer $token'},
+              ),
+            );
+            
+            if (response.statusCode == 200 && response.data['albums']?['items'] != null) {
+              final albums = response.data['albums']['items'] as List;
+              allAlbums.addAll(albums.cast<Map<String, dynamic>>());
+            }
+          } catch (e) {
+            print('Failed to fetch albums for $artist: $e');
+          }
+          
+          if (allAlbums.length >= limit) break;
+        }
+        
+        if (allAlbums.isNotEmpty) {
+          // Remove duplicates and sort by release date
+          final uniqueAlbums = <String, Map<String, dynamic>>{};
+          for (var album in allAlbums) {
+            final id = album['id'] as String?;
+            if (id != null && !uniqueAlbums.containsKey(id)) {
+              uniqueAlbums[id] = album;
+            }
+          }
+          
+          final result = uniqueAlbums.values.toList();
+          result.sort((a, b) {
+            final dateA = a['release_date'] as String? ?? '2000-01-01';
+            final dateB = b['release_date'] as String? ?? '2000-01-01';
+            return dateB.compareTo(dateA); // Newest first
+          });
+          
+          print('Successfully fetched ${result.length} Turkish albums from Spotify search');
+          return result.take(limit).toList();
+        }
+      } else {
+        print('Failed to get token, using mock data');
+      }
+    } catch (e) {
+      print('Error fetching Turkey top albums: $e');
+    }
+    
+    print('Falling back to mock data');
+    return _getMockTurkeyTopAlbums(limit);
+  }
+  
+  /// Get Global top albums
+  static Future<List<Map<String, dynamic>>> getGlobalTopAlbums({
+    int limit = 50,
+  }) async {
+    print('\n=== Getting Global Top Albums ===');
+    print('Limit: $limit');
+    
+    try {
+      // Try to get client credentials token
+      String? token = await _getClientCredentialsToken();
+      
+      if (token != null) {
+        print('Token obtained successfully');
+        
+        // Get new releases globally - use US market for better variety
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/browse/new-releases',
+          queryParameters: {
+            'country': 'US',  // Use US market for global content
+            'limit': limit,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200) {
+          print('Successfully fetched ${response.data['albums']['items'].length} global albums from Spotify');
+          final items = response.data['albums']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      } else {
+        print('Failed to get token, using mock data');
+      }
+    } catch (e) {
+      print('Error fetching global top albums: $e');
+    }
+    
+    print('Falling back to mock data');
+    return _getMockGlobalTopAlbums(limit);
+  }
+  
+  /// Mock Turkey top tracks
+  static List<Map<String, dynamic>> _getMockTurkeyTopTracks(int limit) {
+    final mockTracks = [
+      {'name': 'Şımarık', 'artist': 'Tarkan', 'album': 'Tarkan', 'duration': 241000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273e5c6b33c1f7c8b97f5a75e43'},
+      {'name': 'Gel Ey Seher', 'artist': 'Mabel Matiz', 'album': 'Gel Ey Seher', 'duration': 234000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273a4c8e6b2f7a9b0d5e8c4a2f1'},
+      {'name': 'Paramparça', 'artist': 'Teoman', 'album': 'Ruhçu Bir Kadın', 'duration': 256000, 'cover': 'https://i.scdn.co/image/ab67616d0000b2736c8e3b5f1d8a7e9c4b2a5f3e'},
+      {'name': 'Aşk', 'artist': 'Sertab Erener', 'album': 'Aşk', 'duration': 245000, 'cover': 'https://i.scdn.co/image/ab67616d0000b2738d7e5c4a3b9f2e1d6c5a8f4b'},
+      {'name': 'Nerdesin', 'artist': 'Ezhel', 'album': 'Müzmin', 'duration': 189000, 'cover': 'https://i.scdn.co/image/ab67616d0000b2739e6d4b2a5f8c3e1d7a6b5c4f'},
+      {'name': 'Islak Islak', 'artist': 'Barış Manço', 'album': 'Sakla Samanı', 'duration': 267000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273b5c7d3e2a9f4b1e8c6d5a7f2'},
+      {'name': 'Sütün Eksi', 'artist': 'Hadise', 'album': 'Aşk Kaç Beden Giyer', 'duration': 223000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273c6e8d5a4b2f9e1d7c5a8b4f3'},
+      {'name': 'Yaşamak Bu Değil', 'artist': 'Sezen Aksu', 'album': 'Üstüme Yıkılsa Dünya', 'duration': 298000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273d7f5c8e3a4b2f1e9d6c5a8b7'},
+      {'name': 'Gidin Pulu Pulu', 'artist': 'Mustafa Sandal', 'album': 'Akışına Bırak', 'duration': 211000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273e8c5d7a4b3f2e1d8c6a9b5f4'},
+      {'name': 'Çok Çok', 'artist': 'Kenan Doğulu', 'album': 'Çok Çok', 'duration': 234000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273f9d6c8a5b4e3f2d9c7a8b6e5'},
+      {'name': 'Papatya', 'artist': 'Kıraç', 'album': 'Toprak', 'duration': 276000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273a7e9d5c6b3f4e2d8c5a9b7f6'},
+      {'name': 'Hop De', 'artist': 'Edis', 'album': 'Hop De', 'duration': 198000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273b8f7e6d5a4c3f1e9d6c8a5b4'},
+      {'name': 'Yürekten', 'artist': 'Aleyna Tilki', 'album': 'Yürekten', 'duration': 187000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273c9e8f7d6a5b4e3f2d7c9a6b5'},
+      {'name': 'Bela', 'artist': 'Melek Mosso', 'album': 'Düşler', 'duration': 245000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273daf9e8c7b6a5f4e3d8c7a9b6'},
+      {'name': 'Deliler', 'artist': 'Semicenk', 'album': 'Deliler', 'duration': 234000, 'cover': 'https://i.scdn.co/image/ab67616d0000b273ebf8d9c6a7b5e4f2d9c8a7b5'},
+    ];
+    
+    return List.generate(limit.clamp(0, 50), (index) {
+      final trackData = mockTracks[index % mockTracks.length];
+      return {
+        'id': 'mock_tr_track_$index',
+        'name': trackData['name'],
+        'artists': [{'name': trackData['artist']}],
+        'album': {
+          'name': trackData['album'],
+          'images': [{'url': trackData['cover']}],
+        },
+        'duration_ms': trackData['duration'],
+        'popularity': 100 - index,
+      };
+    });
+  }
+  
+  /// Mock Turkey top albums
+  static List<Map<String, dynamic>> _getMockTurkeyTopAlbums(int limit) {
+    final mockAlbums = [
+      {'name': 'Müzmin', 'artist': 'Ezhel', 'tracks': 12, 'year': '2024-01-15', 'cover': 'https://i.scdn.co/image/ab67616d0000b2739e6d4b2a5f8c3e1d7a6b5c4f'},
+      {'name': 'Gel Ey Seher', 'artist': 'Mabel Matiz', 'tracks': 10, 'year': '2024-02-20', 'cover': 'https://i.scdn.co/image/ab67616d0000b273a4c8e6b2f7a9b0d5e8c4a2f1'},
+      {'name': 'Toprak', 'artist': 'Kıraç', 'tracks': 14, 'year': '2023-12-08', 'cover': 'https://i.scdn.co/image/ab67616d0000b273a7e9d5c6b3f4e2d8c5a9b7f6'},
+      {'name': 'Aşk Kaç Beden Giyer', 'artist': 'Hadise', 'tracks': 11, 'year': '2023-11-17', 'cover': 'https://i.scdn.co/image/ab67616d0000b273c6e8d5a4b2f9e1d7c5a8b4f3'},
+      {'name': 'Düşler', 'artist': 'Melek Mosso', 'tracks': 13, 'year': '2024-03-22', 'cover': 'https://i.scdn.co/image/ab67616d0000b273daf9e8c7b6a5f4e3d8c7a9b6'},
+      {'name': 'Akışına Bırak', 'artist': 'Mustafa Sandal', 'tracks': 10, 'year': '2023-10-05', 'cover': 'https://i.scdn.co/image/ab67616d0000b273e8c5d7a4b3f2e1d8c6a9b5f4'},
+      {'name': 'Üstüme Yıkılsa Dünya', 'artist': 'Sezen Aksu', 'tracks': 12, 'year': '2024-01-30', 'cover': 'https://i.scdn.co/image/ab67616d0000b273d7f5c8e3a4b2f1e9d6c5a8b7'},
+      {'name': 'Ruhçu Bir Kadın', 'artist': 'Teoman', 'tracks': 11, 'year': '2023-09-14', 'cover': 'https://i.scdn.co/image/ab67616d0000b2736c8e3b5f1d8a7e9c4b2a5f3e'},
+      {'name': 'Aşk', 'artist': 'Sertab Erener', 'tracks': 10, 'year': '2024-02-08', 'cover': 'https://i.scdn.co/image/ab67616d0000b2738d7e5c4a3b9f2e1d6c5a8f4b'},
+      {'name': 'Tarkan', 'artist': 'Tarkan', 'tracks': 13, 'year': '2023-08-25', 'cover': 'https://i.scdn.co/image/ab67616d0000b273e5c6b33c1f7c8b97f5a75e43'},
+      {'name': 'Deliler', 'artist': 'Semicenk', 'tracks': 9, 'year': '2024-04-11', 'cover': 'https://i.scdn.co/image/ab67616d0000b273ebf8d9c6a7b5e4f2d9c8a7b5'},
+      {'name': 'Yürekten', 'artist': 'Aleyna Tilki', 'tracks': 8, 'year': '2023-12-20', 'cover': 'https://i.scdn.co/image/ab67616d0000b273c9e8f7d6a5b4e3f2d7c9a6b5'},
+      {'name': 'Çok Çok', 'artist': 'Kenan Doğulu', 'tracks': 12, 'year': '2024-01-05', 'cover': 'https://i.scdn.co/image/ab67616d0000b273f9d6c8a5b4e3f2d9c7a8b6e5'},
+      {'name': 'Hop De', 'artist': 'Edis', 'tracks': 10, 'year': '2023-11-30', 'cover': 'https://i.scdn.co/image/ab67616d0000b273b8f7e6d5a4c3f1e9d6c8a5b4'},
+      {'name': 'Sakla Samanı', 'artist': 'Barış Manço', 'tracks': 14, 'year': '2023-10-18', 'cover': 'https://i.scdn.co/image/ab67616d0000b273b5c7d3e2a9f4b1e8c6d5a7f2'},
+    ];
+    
+    return List.generate(limit.clamp(0, 50), (index) {
+      final albumData = mockAlbums[index % mockAlbums.length];
+      return {
+        'id': 'mock_tr_album_$index',
+        'name': albumData['name'],
+        'artists': [{'name': albumData['artist']}],
+        'images': [{'url': albumData['cover']}],
+        'total_tracks': albumData['tracks'],
+        'release_date': albumData['year'],
+      };
+    });
+  }
+  
+  /// Mock Global top albums
+  static List<Map<String, dynamic>> _getMockGlobalTopAlbums(int limit) {
+    final mockAlbums = [
+      {'name': 'Midnights', 'artist': 'Taylor Swift', 'tracks': 13, 'year': '2023-10-21', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'SOS', 'artist': 'SZA', 'tracks': 23, 'year': '2022-12-09', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Un Verano Sin Ti', 'artist': 'Bad Bunny', 'tracks': 23, 'year': '2022-05-06', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'The Car', 'artist': 'Arctic Monkeys', 'tracks': 10, 'year': '2022-10-21', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Renaissance', 'artist': 'Beyoncé', 'tracks': 16, 'year': '2022-07-29', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Harry\'s House', 'artist': 'Harry Styles', 'tracks': 13, 'year': '2022-05-20', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Starboy', 'artist': 'The Weeknd', 'tracks': 18, 'year': '2016-11-25', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'DAMN.', 'artist': 'Kendrick Lamar', 'tracks': 14, 'year': '2017-04-14', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'After Hours', 'artist': 'The Weeknd', 'tracks': 14, 'year': '2020-03-20', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Divide', 'artist': 'Ed Sheeran', 'tracks': 16, 'year': '2017-03-03', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': '30', 'artist': 'Adele', 'tracks': 12, 'year': '2021-11-19', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Sour', 'artist': 'Olivia Rodrigo', 'tracks': 11, 'year': '2021-05-21', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Positions', 'artist': 'Ariana Grande', 'tracks': 14, 'year': '2020-10-30', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'Planet Her', 'artist': 'Doja Cat', 'tracks': 14, 'year': '2021-06-25', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+      {'name': 'folklore', 'artist': 'Taylor Swift', 'tracks': 16, 'year': '2020-07-24', 'cover': 'https://i.scdn.co/image/ab67616d0000b2730b0c634f7e7e7e7e7e7e7e7e'},
+    ];
+    
+    return List.generate(limit.clamp(0, 50), (index) {
+      final albumData = mockAlbums[index % mockAlbums.length];
+      return {
+        'id': 'mock_global_album_$index',
+        'name': albumData['name'],
+        'artists': [{'name': albumData['artist']}],
+        'images': [{'url': albumData['cover']}],
+        'total_tracks': albumData['tracks'],
+        'release_date': albumData['year'],
+      };
+    });
+  }
 }

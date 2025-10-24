@@ -26,7 +26,16 @@ class _SpotifyTracksPageState extends ConsumerState<SpotifyTracksPage> {
     setState(() => _isLoading = true);
     
     try {
-      final tracks = await EnhancedSpotifyService.getSavedTracks(limit: 50);
+      List<Map<String, dynamic>> tracks;
+      
+      if (EnhancedSpotifyService.isConnected) {
+        // Load from Spotify if connected
+        tracks = await EnhancedSpotifyService.getSavedTracks(limit: 50);
+      } else {
+        // Use mock data if not connected
+        tracks = _getMockTracks();
+      }
+      
       if (mounted) {
         setState(() {
           _tracks = tracks;
@@ -38,6 +47,19 @@ class _SpotifyTracksPageState extends ConsumerState<SpotifyTracksPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+  
+  List<Map<String, dynamic>> _getMockTracks() {
+    return List.generate(20, (index) => {
+      'id': 'mock_track_$index',
+      'name': 'Şarkı ${index + 1}',
+      'artists': [{'name': 'Sanatçı ${index + 1}'}],
+      'album': {
+        'name': 'Albüm ${index + 1}',
+        'images': [{'url': null}],
+      },
+      'duration_ms': 180000 + (index * 15000),
+    });
   }
 
   List<Map<String, dynamic>> get _filteredTracks {

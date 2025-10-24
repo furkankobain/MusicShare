@@ -18,6 +18,13 @@ class HomePage extends ConsumerWidget {
     
     return Scaffold(
       extendBodyBehindAppBar: true,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/create-playlist'),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Çalma Listesi'),
+        backgroundColor: ModernDesignSystem.primaryGreen,
+        foregroundColor: Colors.white,
+      ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -111,17 +118,12 @@ class HomePage extends ConsumerWidget {
               
               const SizedBox(height: 24),
               
-              // Spotify Quick Access
+              // Spotify Player Widget (only if connected)
               if (EnhancedSpotifyService.isConnected)
-                _buildSpotifyQuickAccess(context, isDark),
+                const EnhancedSpotifyPlayerWidget(),
               
               if (EnhancedSpotifyService.isConnected)
                 const SizedBox(height: 24),
-              
-              // Spotify Player Widget
-              const EnhancedSpotifyPlayerWidget(),
-              
-              const SizedBox(height: 24),
               
               // Quick Stats
               _buildModernQuickStats(context, isDark),
@@ -135,11 +137,6 @@ class HomePage extends ConsumerWidget {
               
               // Top Tracks This Week
               _buildModernTopTracks(context, isDark),
-              
-              const SizedBox(height: 24),
-              
-              // Recently Played
-              _buildRecentlyPlayed(context, ref),
             ],
           ),
         ),
@@ -203,85 +200,6 @@ class HomePage extends ConsumerWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-  
-  Widget _buildSpotifyQuickAccess(BuildContext context, bool isDark) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildQuickAccessCard(
-            context,
-            isDark: isDark,
-            icon: Icons.music_note_rounded,
-            title: 'Şarkılarım',
-            gradient: ModernDesignSystem.primaryGradient,
-            onTap: () => context.push('/spotify-tracks'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildQuickAccessCard(
-            context,
-            isDark: isDark,
-            icon: Icons.album_rounded,
-            title: 'Albümlerim',
-            gradient: ModernDesignSystem.blueGradient,
-            onTap: () => context.push('/spotify-albums'),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildQuickAccessCard(BuildContext context, {
-    required bool isDark,
-    required IconData icon,
-    required String title,
-    required Gradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 32,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: Colors.white,
-              size: 16,
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -719,85 +637,6 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildRecentlyPlayed(BuildContext context, WidgetRef ref) {
-    // final recentlyPlayed = ref.watch(recentlyPlayedProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Recently Played',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                // Navigate to full recently played page
-              },
-              child: const Text('View All'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildConnectSpotifyPrompt(context),
-      ],
-    );
-  }
-
-  Widget _buildConnectSpotifyPrompt(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppTheme.primaryColor.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.music_note,
-            size: 48,
-            color: AppTheme.primaryColor,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Connect Spotify to see your music',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Sync your listening history and discover new music',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: () {
-              // Navigate to Spotify connect page
-            },
-            icon: const Icon(Icons.music_note, size: 18),
-            label: const Text('Connect Spotify'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   // Removed unused _buildSpotifyPlayer method - replaced with EnhancedSpotifyPlayerWidget
 

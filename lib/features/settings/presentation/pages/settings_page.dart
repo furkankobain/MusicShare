@@ -287,6 +287,8 @@ class SettingsPage extends ConsumerWidget {
 
   Widget _buildSpotifySection(BuildContext context, WidgetRef ref) {
     final themeColors = ref.watch(themeColorsProvider);
+    final bool isSpotifyConnected = EnhancedSpotifyService.isConnected;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return EnhancedCard(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -295,13 +297,21 @@ class SettingsPage extends ConsumerWidget {
         children: [
           Row(
             children: [
-              Icon(
-                Icons.music_note,
-                color: themeColors.primaryColor,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: ModernDesignSystem.primaryGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.music_note_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
-                'Spotify',
+                'Spotify Entegrasyonu',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -309,27 +319,112 @@ class SettingsPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ListTile(
-            leading: const Icon(Icons.link),
-            title: const Text('Spotify Bağlantısı'),
-            subtitle: const Text('Spotify hesabınızı bağlayın'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.pushNamed(context, '/spotify-connect');
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.sync),
-            title: const Text('Otomatik Senkronizasyon'),
-            subtitle: const Text('Çalma listelerini otomatik senkronize et'),
-            trailing: Switch(
-              value: true, // Mock value
-              onChanged: (bool value) {
-                // Handle sync toggle
-              },
-              // ignore: deprecated_member_use
-        activeColor: themeColors.primaryColor,
+          
+          // Connection Status Card
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: isSpotifyConnected 
+                  ? ModernDesignSystem.primaryGradient
+                  : LinearGradient(
+                      colors: [
+                        isDark 
+                            ? Colors.grey[800]!
+                            : Colors.grey[200]!,
+                        isDark 
+                            ? Colors.grey[900]!
+                            : Colors.grey[300]!,
+                      ],
+                    ),
+              borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
             ),
+            child: Row(
+              children: [
+                Icon(
+                  isSpotifyConnected ? Icons.check_circle : Icons.info_outline,
+                  color: isSpotifyConnected ? Colors.white : Colors.grey[600],
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isSpotifyConnected ? 'Bağlı' : 'Bağlı Değil',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: isSpotifyConnected ? Colors.white : Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isSpotifyConnected 
+                            ? 'Spotify hesabınız aktif'
+                            : 'Spotify özellikleri için bağlanın',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isSpotifyConnected 
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Connect/Disconnect Button
+          ListTile(
+            leading: Icon(
+              isSpotifyConnected ? Icons.link_off : Icons.link,
+              color: themeColors.primaryColor,
+            ),
+            title: Text(isSpotifyConnected ? 'Bağlantıyı Kes' : 'Spotify ile Bağlan'),
+            subtitle: Text(
+              isSpotifyConnected 
+                  ? 'Spotify hesabınızdan çıkış yapın'
+                  : 'Müziklerinizi senkronize edin',
+            ),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () async {
+              if (isSpotifyConnected) {
+                // Disconnect from Spotify
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Spotify Bağlantısını Kes'),
+                    content: const Text('Spotify hesabınızdan çıkış yapmak istediğinizden emin misiniz?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('İptal'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Evet'),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (confirm == true) {
+                  await EnhancedSpotifyService.disconnect();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Spotify bağlantısı kesildi')),
+                    );
+                  }
+                }
+              } else {
+                // Connect to Spotify
+                context.push('/spotify-connect');
+              }
+            },
           ),
         ],
       ),
