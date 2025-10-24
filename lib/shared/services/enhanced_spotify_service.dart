@@ -533,19 +533,144 @@ class EnhancedSpotifyService {
     int offset = 0,
   }) async {
     try {
-      if (!_isConnected || _accessToken == null) return [];
-
-      // Mock saved tracks - replace with real API call
-      return List.generate(limit, (index) => {
-        'id': 'saved_track_${index + offset}',
-        'name': 'Saved Track ${index + offset + 1}',
-        'artist': 'Saved Artist ${index + offset + 1}',
-        'album': 'Saved Album ${index + offset + 1}',
-        'image_url': 'https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5',
-        'added_at': DateTime.now().subtract(Duration(days: index)).toIso8601String(),
-        'duration_ms': 175000 + (index * 12000),
-      });
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/me/tracks',
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final items = response.data['items'] as List;
+        return items.map((item) => item['track'] as Map<String, dynamic>).toList();
+      }
+      
+      return [];
     } catch (e) {
+      print('Error fetching saved tracks: $e');
+      return [];
+    }
+  }
+  
+  /// Get user's saved albums
+  static Future<List<Map<String, dynamic>>> getSavedAlbums({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/me/albums',
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final items = response.data['items'] as List;
+        return items.map((item) => item['album'] as Map<String, dynamic>).toList();
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching saved albums: $e');
+      return [];
+    }
+  }
+  
+  /// Search for tracks, albums, or artists
+  static Future<Map<String, dynamic>> search({
+    required String query,
+    List<String> types = const ['track', 'album', 'artist'],
+    int limit = 20,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/search',
+        queryParameters: {
+          'q': query,
+          'type': types.join(','),
+          'limit': limit,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      
+      return {};
+    } catch (e) {
+      print('Error searching: $e');
+      return {};
+    }
+  }
+  
+  /// Get album details
+  static Future<Map<String, dynamic>?> getAlbum(String albumId) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/albums/$albumId',
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error fetching album: $e');
+      return null;
+    }
+  }
+  
+  /// Get new releases
+  static Future<List<Map<String, dynamic>>> getNewReleases({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/browse/new-releases',
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final items = response.data['albums']['items'] as List;
+        return items.cast<Map<String, dynamic>>();
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching new releases: $e');
       return [];
     }
   }

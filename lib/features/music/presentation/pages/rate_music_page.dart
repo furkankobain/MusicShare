@@ -67,7 +67,10 @@ class _RateMusicPageState extends ConsumerState<RateMusicPage> {
   }
 
   Future<void> _loadExistingRating() async {
-    final existingRating = await MusicRatingService.getRatingByTrackId(widget.track['id']);
+    final trackId = widget.track['id'];
+    if (trackId == null) return;
+    
+    final existingRating = await MusicRatingService.getRatingByTrackId(trackId);
     if (existingRating != null && mounted) {
       setState(() {
         _rating = existingRating.rating;
