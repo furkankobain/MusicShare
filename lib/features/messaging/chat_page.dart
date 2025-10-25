@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../shared/models/conversation.dart';
 import '../../shared/models/message.dart';
 import '../../shared/services/messaging_service.dart';
+import 'widgets/music_share_card.dart';
 
 class ChatPage extends StatefulWidget {
   final Conversation conversation;
@@ -116,6 +117,23 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Widget _buildMessageBubble(Message message, bool isMe) {
+    // If music share, use special card
+    if (message.isMusicShare) {
+      return Align(
+        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
+          ),
+          child: MusicShareCard(
+            message: message,
+            isMe: isMe,
+          ),
+        ),
+      );
+    }
+
+    // Regular text message
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
