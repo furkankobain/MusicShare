@@ -144,6 +144,42 @@ class NotificationService {
     );
   }
 
+  /// Show new message notification
+  static Future<void> showNewMessage({
+    required String senderName,
+    required String messageContent,
+    String? conversationId,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'messages_channel',
+      'Messages',
+      channelDescription: 'Notifications for new messages',
+      importance: Importance.high,
+      priority: Priority.high,
+      showWhen: true,
+      icon: '@mipmap/ic_launcher',
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    await _localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      senderName,
+      messageContent,
+      details,
+      payload: conversationId,
+    );
+  }
+
   /// Show music recommendation notification
   static Future<void> showMusicRecommendation({
     required String trackName,

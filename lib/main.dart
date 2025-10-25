@@ -41,7 +41,7 @@ import 'features/lists/presentation/pages/music_lists_page.dart';
 import 'features/notes/presentation/pages/notes_page.dart';
 import 'features/music/presentation/pages/spotify_tracks_page.dart';
 import 'features/music/presentation/pages/spotify_albums_page.dart';
-import 'features/music/presentation/pages/create_playlist_page.dart';
+// import 'features/music/presentation/pages/create_playlist_page.dart'; // Removed - using playlists version
 import 'features/music/presentation/pages/turkey_top_tracks_page.dart';
 import 'features/music/presentation/pages/turkey_top_albums_page.dart';
 import 'features/music/presentation/pages/track_detail_page.dart';
@@ -49,6 +49,11 @@ import 'features/music/presentation/pages/artist_profile_page.dart';
 import 'features/music/presentation/pages/album_detail_page.dart';
 import 'features/favorites/presentation/pages/favorites_page.dart';
 import 'features/recently_played/recently_played_page.dart';
+import 'features/playlists/user_playlists_page.dart';
+import 'features/playlists/create_playlist_page.dart';
+import 'features/playlists/import_spotify_playlists_page.dart';
+import 'features/playlists/playlist_detail_page.dart';
+import 'shared/models/music_list.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -212,11 +217,6 @@ final _router = GoRouter(
         },
       ),
       GoRoute(
-        path: '/create-playlist',
-        name: 'create-playlist',
-        builder: (context, state) => const CreatePlaylistPage(),
-      ),
-      GoRoute(
         path: '/turkey-top-tracks',
         name: 'turkey-top-tracks',
         builder: (context, state) => const TurkeyTopTracksPage(),
@@ -251,6 +251,29 @@ final _router = GoRouter(
         path: '/recently-played',
         name: 'recently-played',
         builder: (context, state) => const RecentlyPlayedPage(),
+      ),
+      GoRoute(
+        path: '/playlists',
+        name: 'playlists',
+        builder: (context, state) => const UserPlaylistsPage(),
+      ),
+      GoRoute(
+        path: '/create-playlist',
+        name: 'create-playlist',
+        builder: (context, state) => const CreatePlaylistPage(),
+      ),
+      GoRoute(
+        path: '/import-spotify-playlists',
+        name: 'import-spotify-playlists',
+        builder: (context, state) => const ImportSpotifyPlaylistsPage(),
+      ),
+      GoRoute(
+        path: '/playlist-detail',
+        name: 'playlist-detail',
+        builder: (context, state) {
+          final playlist = state.extra as MusicList;
+          return PlaylistDetailPage(playlist: playlist);
+        },
       ),
     GoRoute(
       path: '/settings',

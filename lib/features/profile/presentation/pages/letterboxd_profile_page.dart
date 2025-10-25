@@ -196,7 +196,7 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
+                        child: OutlinedButton.icon(
                           onPressed: () => context.push('/recently-played'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -209,18 +209,54 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: Text(
-                            'Dinleme Geçmişi',
+                          icon: Icon(
+                            Icons.history,
+                            size: 18,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          label: Text(
+                            'Geçmiş',
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black,
                               fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: OutlinedButton(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/playlists'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.3)
+                                  : Colors.black.withValues(alpha: 0.3),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          icon: Icon(
+                            Icons.queue_music,
+                            size: 18,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          label: Text(
+                            'Listeler',
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
                           onPressed: () => context.push('/settings'),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
@@ -233,11 +269,17 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          child: Text(
-                            'Profili Düzenle',
+                          icon: Icon(
+                            Icons.edit,
+                            size: 18,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                          label: Text(
+                            'Düzenle',
                             style: TextStyle(
                               color: isDark ? Colors.white : Colors.black,
                               fontWeight: FontWeight.w600,
+                              fontSize: 13,
                             ),
                           ),
                         ),

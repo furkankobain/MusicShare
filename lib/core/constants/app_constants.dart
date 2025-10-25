@@ -16,6 +16,10 @@ class AppConstants {
     'user-read-playback-state',
     'user-read-email',
     'user-read-private',
+    'playlist-read-private',
+    'playlist-read-collaborative',
+    'playlist-modify-public',
+    'playlist-modify-private',
   ];
   
   // API Endpoints

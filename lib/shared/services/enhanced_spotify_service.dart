@@ -362,6 +362,185 @@ class EnhancedSpotifyService {
       return [];
     }
   }
+  
+  /// Get full playlist details including tracks
+  static Future<Map<String, dynamic>?> getPlaylistDetails(String playlistId) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/playlists/$playlistId',
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error fetching playlist details: $e');
+      return null;
+    }
+  }
+  
+  /// Create a new playlist on Spotify
+  static Future<String?> createPlaylistOnSpotify({
+    required String name,
+    String? description,
+    bool isPublic = true,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      // Get user profile if not already loaded
+      if (_userProfile == null) {
+        await fetchUserProfile();
+      }
+      
+      if (_userProfile == null || _userProfile!['id'] == null) {
+        print('Cannot create playlist: User profile not available');
+        return null;
+      }
+      
+      final userId = _userProfile!['id'];
+      
+      final response = await _dio.post(
+        '${AppConstants.baseUrl}/users/$userId/playlists',
+        data: {
+          'name': name,
+          'description': description ?? '',
+          'public': isPublic,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      if (response.statusCode == 201) {
+        return response.data['id'] as String?;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error creating playlist on Spotify: $e');
+      return null;
+    }
+  }
+  
+  /// Add tracks to a Spotify playlist
+  static Future<bool> addTracksToSpotifyPlaylist(
+    String playlistId,
+    List<String> trackUris,
+  ) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      // Convert track IDs to URIs if needed
+      final uris = trackUris.map((uri) {
+        if (uri.startsWith('spotify:track:')) {
+          return uri;
+        } else {
+          return 'spotify:track:$uri';
+        }
+      }).toList();
+      
+      final response = await _dio.post(
+        '${AppConstants.baseUrl}/playlists/$playlistId/tracks',
+        data: {
+          'uris': uris,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Error adding tracks to Spotify playlist: $e');
+      return false;
+    }
+  }
+  
+  /// Remove tracks from a Spotify playlist
+  static Future<bool> removeTracksFromSpotifyPlaylist(
+    String playlistId,
+    List<String> trackUris,
+  ) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      // Convert track IDs to URIs if needed
+      final uris = trackUris.map((uri) {
+        if (uri.startsWith('spotify:track:')) {
+          return uri;
+        } else {
+          return 'spotify:track:$uri';
+        }
+      }).toList();
+      
+      final response = await _dio.delete(
+        '${AppConstants.baseUrl}/playlists/$playlistId/tracks',
+        data: {
+          'tracks': uris.map((uri) => {'uri': uri}).toList(),
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error removing tracks from Spotify playlist: $e');
+      return false;
+    }
+  }
+  
+  /// Update Spotify playlist metadata
+  static Future<bool> updateSpotifyPlaylist({
+    required String playlistId,
+    String? name,
+    String? description,
+    bool? isPublic,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final Map<String, dynamic> data = {};
+      if (name != null) data['name'] = name;
+      if (description != null) data['description'] = description;
+      if (isPublic != null) data['public'] = isPublic;
+      
+      if (data.isEmpty) return true; // Nothing to update
+      
+      final response = await _dio.put(
+        '${AppConstants.baseUrl}/playlists/$playlistId',
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error updating Spotify playlist: $e');
+      return false;
+    }
+  }
 
   /// Get user's top tracks
   static Future<List<Map<String, dynamic>>> getTopTracks({
@@ -998,6 +1177,29 @@ class EnhancedSpotifyService {
     }
   }
 
+  /// Get track details
+  static Future<Map<String, dynamic>?> getTrackDetails(String trackId) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/tracks/$trackId',
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        return response.data as Map<String, dynamic>;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error fetching track details: $e');
+      return null;
+    }
+  }
+  
   /// Get album information
   static Future<Map<String, dynamic>?> getAlbumInfo(String albumId) async {
     try {
