@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:convert';
 
 import '../../core/utils/result.dart';
@@ -127,6 +128,34 @@ class FirebaseBypassAuthService {
       // Set current user to automatically log in after signup
       _currentUser = userData;
       await _saveCurrentUser();
+
+      // **NEW: Save user to Firestore for search functionality**
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .set({
+          'userId': userId,
+          'email': email,
+          'username': username.toLowerCase(),
+          'displayName': displayName,
+          'createdAt': FieldValue.serverTimestamp(),
+          'photoURL': null,
+          'bio': null,
+          'playlistCount': 0,
+          'reviewCount': 0,
+          'followersCount': 0,
+          'followingCount': 0,
+        });
+        
+        if (kDebugMode) {
+          print('FirebaseBypassAuthService: User saved to Firestore');
+        }
+      } catch (firestoreError) {
+        if (kDebugMode) {
+          print('FirebaseBypassAuthService: Firestore save error (non-critical): $firestoreError');
+        }
+      }
 
       if (kDebugMode) {
         print('FirebaseBypassAuthService: User created and logged in successfully: $userId');

@@ -20,6 +20,7 @@ class Message {
   final DateTime timestamp;
   final bool isRead;
   final String? replyTo; // Message ID being replied to
+  final Map<String, List<String>>? reactions; // emoji -> [userId1, userId2...]
 
   Message({
     required this.id,
@@ -33,6 +34,7 @@ class Message {
     required this.timestamp,
     this.isRead = false,
     this.replyTo,
+    this.reactions,
   });
 
   Map<String, dynamic> toFirestore() {
@@ -47,11 +49,21 @@ class Message {
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'replyTo': replyTo,
+      'reactions': reactions,
     };
   }
 
   factory Message.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    
+    // Parse reactions
+    Map<String, List<String>>? reactions;
+    if (data['reactions'] != null) {
+      final reactionsData = data['reactions'] as Map<String, dynamic>;
+      reactions = reactionsData.map((key, value) => 
+        MapEntry(key, List<String>.from(value as List)));
+    }
+    
     return Message(
       id: doc.id,
       conversationId: data['conversationId'] ?? '',
@@ -67,6 +79,7 @@ class Message {
       timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isRead: data['isRead'] ?? false,
       replyTo: data['replyTo'],
+      reactions: reactions,
     );
   }
 
@@ -82,6 +95,7 @@ class Message {
     DateTime? timestamp,
     bool? isRead,
     String? replyTo,
+    Map<String, List<String>>? reactions,
   }) {
     return Message(
       id: id ?? this.id,
@@ -95,6 +109,7 @@ class Message {
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
       replyTo: replyTo ?? this.replyTo,
+      reactions: reactions ?? this.reactions,
     );
   }
 

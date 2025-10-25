@@ -175,18 +175,20 @@ class MessagingService {
       final currentUserId = FirebaseBypassAuthService.currentUserId;
       if (currentUserId == null) return;
 
-      // Get unread messages
+      // Get unread messages - simplified query to avoid index requirement
       final messagesQuery = await _firestore
           .collection(_messagesCollection)
           .where('conversationId', isEqualTo: conversationId)
-          .where('senderId', isNotEqualTo: currentUserId)
           .where('isRead', isEqualTo: false)
           .get();
 
-      // Mark as read
+      // Mark as read - filter by senderId in-memory
       final batch = _firestore.batch();
       for (final doc in messagesQuery.docs) {
-        batch.update(doc.reference, {'isRead': true});
+        final senderId = doc.data()['senderId'] as String?;
+        if (senderId != null && senderId != currentUserId) {
+          batch.update(doc.reference, {'isRead': true});
+        }
       }
 
       // Reset unread count
@@ -287,5 +289,50 @@ class MessagingService {
       }
       return total;
     });
+  }
+
+  /// Add or remove a reaction to a message
+  static Future<bool> toggleReaction({
+    required String messageId,
+    required String emoji,
+  }) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      final messageRef = _firestore.collection(_messagesCollection).doc(messageId);
+      final doc = await messageRef.get();
+      
+      if (!doc.exists) return false;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final reactions = Map<String, dynamic>.from(data['reactions'] ?? {});
+      
+      if (reactions.containsKey(emoji)) {
+        final users = List<String>.from(reactions[emoji] as List);
+        if (users.contains(currentUserId)) {
+          // Remove reaction
+          users.remove(currentUserId);
+          if (users.isEmpty) {
+            reactions.remove(emoji);
+          } else {
+            reactions[emoji] = users;
+          }
+        } else {
+          // Add user to reaction
+          users.add(currentUserId);
+          reactions[emoji] = users;
+        }
+      } else {
+        // Create new reaction
+        reactions[emoji] = [currentUserId];
+      }
+
+      await messageRef.update({'reactions': reactions});
+      return true;
+    } catch (e) {
+      print('Error toggling reaction: $e');
+      return false;
+    }
   }
 }

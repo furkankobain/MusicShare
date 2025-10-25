@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import '../../shared/models/conversation.dart';
@@ -9,9 +8,12 @@ import '../../shared/models/message.dart';
 import '../../shared/services/messaging_service.dart';
 import '../../shared/services/presence_service.dart';
 import '../../shared/services/firebase_storage_service.dart';
+import '../../shared/services/firebase_bypass_auth_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'widgets/music_share_card.dart';
 import 'widgets/image_message_widget.dart';
+import 'widgets/instagram_message_bubble.dart';
+import 'widgets/emoji_reaction_picker.dart';
 
 class ChatPage extends StatefulWidget {
   final Conversation conversation;
@@ -28,8 +30,7 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final MessagingService _messagingService = MessagingService();
-  final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  late final String _currentUserId;
 
   bool _isTyping = false;
   bool _isOtherUserTyping = false;
@@ -41,6 +42,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    _currentUserId = FirebaseBypassAuthService.currentUserId ?? '';
     _listenToTypingStatus();
     _listenToOnlineStatus();
   }
@@ -69,7 +71,7 @@ class _ChatPageState extends State<ChatPage> {
       if (typingStatus == null) return;
       
       // Get other user's typing status
-      final otherUserId = widget.conversation.participants
+      final otherUserId = widget.conversation.participantIds
           .firstWhere((id) => id != _currentUserId);
       
       setState(() {
@@ -79,7 +81,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _listenToOnlineStatus() {
-    final otherUserId = widget.conversation.participants
+    final otherUserId = widget.conversation.participantIds
         .firstWhere((id) => id != _currentUserId);
     
     PresenceService.getUserOnlineStatus(otherUserId).listen((isOnline) {
@@ -137,19 +139,18 @@ class _ChatPageState extends State<ChatPage> {
     _messageController.clear();
     setState(() => _isTyping = false);
 
-    await _messagingService.sendMessage(
+    await MessagingService.sendMessage(
       conversationId: widget.conversation.id,
       content: content,
-      type: MessageType.text,
     );
 
     _scrollToBottom();
   }
 
   String _getOtherUserName() {
-    final otherUserId = widget.conversation.participants
+    final otherUserId = widget.conversation.participantIds
         .firstWhere((id) => id != _currentUserId);
-    return widget.conversation.participantNames?[otherUserId] ?? 'User';
+    return widget.conversation.participantNames[otherUserId] ?? 'User';
   }
 
   String _formatMessageTime(DateTime timestamp) {
@@ -205,73 +206,127 @@ class _ChatPageState extends State<ChatPage> {
   void _showMessageActions(Message message, bool isMe) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.copy),
-                title: const Text('Kopyala'),
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: message.content));
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mesaj kopyalandı')),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.reply),
-                title: const Text('Yanıtla'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // TODO: Implement reply functionality
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
-                  );
-                },
-              ),
-              if (isMe)
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // Emoji reactions (Instagram style)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: ['❤️', '👍', '😂', '😮', '😢', '🔥'].map((emoji) {
+                      return GestureDetector(
+                        onTap: () {
+                          MessagingService.toggleReaction(
+                            messageId: message.id,
+                            emoji: emoji,
+                          );
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                
+                const Divider(height: 1),
+                
                 ListTile(
-                  leading: const Icon(Icons.delete, color: Colors.red),
-                  title: const Text('Sil', style: TextStyle(color: Colors.red)),
-                  onTap: () async {
+                  leading: const Icon(Icons.add_reaction_outlined),
+                  title: const Text('Daha Fazla Tepki'),
+                  onTap: () {
                     Navigator.pop(context);
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Mesajı Sil'),
-                        content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('İptal'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, true),
-                            child: const Text('Sil', style: TextStyle(color: Colors.red)),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (confirm == true) {
-                      final success = await MessagingService.deleteMessage(message.id);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
-                          ),
-                        );
-                      }
-                    }
+                    showEmojiReactionPicker(context, message.id);
                   },
                 ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.reply),
+                  title: const Text('Yanıtla'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.copy),
+                  title: const Text('Kopyala'),
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: message.content));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Mesaj kopyalandı')),
+                    );
+                  },
+                ),
+                if (isMe)
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text('Sil', style: TextStyle(color: Colors.red)),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Mesajı Sil'),
+                          content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('İptal'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Sil', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true) {
+                        final success = await MessagingService.deleteMessage(message.id);
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -366,60 +421,54 @@ class _ChatPageState extends State<ChatPage> {
       );
     }
 
-    // Regular text message
-    return Align(
-      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
-        onLongPress: () => _showMessageActions(message, isMe),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.75,
-          ),
-          decoration: BoxDecoration(
-            color: isMe ? Colors.blue : Colors.grey.shade200,
-            borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(16),
-              topRight: const Radius.circular(16),
-              bottomLeft: Radius.circular(isMe ? 16 : 4),
-              bottomRight: Radius.circular(isMe ? 4 : 16),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                message.content,
-                style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
-                  fontSize: 15,
+    // Regular text message - Instagram style
+    return GestureDetector(
+      onLongPress: () => _showMessageActions(message, isMe),
+      child: InstagramMessageBubble(
+        message: message,
+        isMe: isMe,
+        currentUserId: _currentUserId,
+        onReply: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
+          );
+        },
+        onDelete: () async {
+          final confirm = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Mesajı Sil'),
+              content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('İptal'),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatMessageTime(message.timestamp),
-                    style: TextStyle(
-                      color: isMe ? Colors.white70 : Colors.grey.shade600,
-                      fontSize: 11,
-                    ),
-                  ),
-                  if (isMe) ...[
-                    const SizedBox(width: 4),
-                    Icon(
-                      message.isRead ? Icons.done_all : Icons.done,
-                      size: 14,
-                      color: message.isRead ? Colors.blue.shade200 : Colors.white70,
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
-        ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Sil', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
+          );
+          if (confirm == true) {
+            final success = await MessagingService.deleteMessage(message.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
+                ),
+              );
+            }
+          }
+        },
+        onDoubleTap: () {
+          // Quick reaction with heart emoji on double tap (Instagram style)
+          MessagingService.toggleReaction(
+            messageId: message.id,
+            emoji: '❤️',
+          );
+        },
       ),
     );
   }
@@ -534,7 +583,7 @@ class _ChatPageState extends State<ChatPage> {
           // Messages List
           Expanded(
             child: StreamBuilder<List<Message>>(
-              stream: _messagingService.getMessages(widget.conversation.id),
+              stream: MessagingService.getMessages(widget.conversation.id),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -581,9 +630,8 @@ class _ChatPageState extends State<ChatPage> {
 
                 // Mark messages as read
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _messagingService.markAsRead(
-                    widget.conversation.id,
-                    _currentUserId,
+                  MessagingService.markMessagesAsRead(
+                    conversationId: widget.conversation.id,
                   );
                 });
 

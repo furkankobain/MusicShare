@@ -53,6 +53,8 @@ import 'features/playlists/user_playlists_page.dart';
 import 'features/playlists/create_playlist_page.dart';
 import 'features/playlists/import_spotify_playlists_page.dart';
 import 'features/playlists/playlist_detail_page.dart';
+import 'features/playlists/discover_playlists_page.dart';
+import 'features/messaging/conversations_page.dart';
 import 'shared/models/music_list.dart';
 
 void main() async {
@@ -327,6 +329,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const MusicShareHomePage(),
     const DiscoverPage(),
+    const UserPlaylistsPage(),
+    const ConversationsPage(),
     const LetterboxdProfilePage(),
   ];
 
@@ -338,6 +342,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
+        selectedFontSize: 12,
+        unselectedFontSize: 10,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -346,6 +352,14 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.explore),
             label: 'Keşfet',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.library_music),
+            label: 'Listeler',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: 'Mesajlar',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

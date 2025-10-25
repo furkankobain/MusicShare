@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../../shared/models/conversation.dart';
 import '../../shared/services/messaging_service.dart';
+import '../../shared/services/firebase_bypass_auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'chat_page.dart';
 
@@ -15,12 +15,17 @@ class UserSearchPage extends StatefulWidget {
 
 class _UserSearchPageState extends State<UserSearchPage> {
   final TextEditingController _searchController = TextEditingController();
-  final MessagingService _messagingService = MessagingService();
-  final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
+  late final String _currentUserId;
   
   List<Map<String, dynamic>> _searchResults = [];
   bool _isSearching = false;
   bool _hasSearched = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUserId = FirebaseBypassAuthService.currentUserId ?? '';
+  }
 
   @override
   void dispose() {
@@ -80,18 +85,28 @@ class _UserSearchPageState extends State<UserSearchPage> {
 
   Future<void> _startConversation(Map<String, dynamic> user) async {
     try {
-      // Check if conversation already exists
-      final existingConversation = await _messagingService.getOrCreateConversation(
-        user['id'],
+      // Get or create conversation
+      final conversationId = await MessagingService.getOrCreateConversation(
+        otherUserId: user['id'],
+        otherUserName: user['displayName'] ?? user['username'],
+        otherUserAvatar: user['photoURL'],
       );
 
-      if (!mounted) return;
+      if (!mounted || conversationId == null) return;
+
+      // Get the conversation object
+      final convDoc = await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(conversationId)
+          .get();
+      
+      final conversation = Conversation.fromFirestore(convDoc);
 
       // Navigate to chat
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => ChatPage(conversation: existingConversation),
+          builder: (context) => ChatPage(conversation: conversation),
         ),
       );
     } catch (e) {

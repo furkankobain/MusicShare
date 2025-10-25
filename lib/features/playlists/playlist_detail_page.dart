@@ -5,6 +5,7 @@ import '../../shared/services/playlist_sync_service.dart';
 import '../../shared/services/enhanced_spotify_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'widgets/add_track_bottom_sheet.dart';
+import 'widgets/playlist_share_bottom_sheet.dart';
 
 class PlaylistDetailPage extends StatefulWidget {
   final MusicList playlist;
@@ -174,6 +175,14 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             icon: Icon(Icons.more_vert, color: isDark ? Colors.white : Colors.black87),
             onSelected: (value) {
               switch (value) {
+                case 'share':
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => PlaylistShareBottomSheet(playlist: _playlist),
+                  );
+                  break;
                 case 'export':
                   _exportToSpotify();
                   break;
@@ -183,6 +192,16 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'share',
+                child: Row(
+                  children: [
+                    Icon(Icons.share, size: 20),
+                    SizedBox(width: 12),
+                    Text('Paylaş'),
+                  ],
+                ),
+              ),
               if (_playlist.source == 'local')
                 const PopupMenuItem(
                   value: 'export',
