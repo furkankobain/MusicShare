@@ -9,6 +9,8 @@ import '../../../albums/presentation/pages/albums_page.dart';
 import '../../../discover/presentation/pages/enhanced_discover_page.dart';
 import '../../../../shared/widgets/spotify/spotify_connect_button.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/services/spotify_service.dart';
+import '../../../../shared/models/play_history.dart';
 
 class MusicShareHomePage extends ConsumerStatefulWidget {
   const MusicShareHomePage({super.key});
@@ -22,8 +24,10 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   int _selectedTabIndex = 0;
   List<Map<String, dynamic>> _turkeyTopTracks = [];
   List<Map<String, dynamic>> _turkeyTopAlbums = [];
+  List<PlayHistory> _recentlyPlayed = [];
   bool _isLoadingTracks = true;
   bool _isLoadingAlbums = true;
+  bool _isLoadingRecent = true;
 
   final List<String> _tabs = ['Şarkılar', 'Notes', 'Albümler', 'Aktivite'];
 
@@ -73,6 +77,24 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingAlbums = false);
+      }
+    }
+
+    // Load recently played
+    if (mounted) {
+      setState(() => _isLoadingRecent = true);
+    }
+    try {
+      final tracks = await SpotifyService.getRecentlyPlayed(limit: 10);
+      if (mounted) {
+        setState(() {
+          _recentlyPlayed = tracks.map((track) => PlayHistory.fromSpotify(track)).toList();
+          _isLoadingRecent = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingRecent = false);
       }
     }
   }
@@ -181,6 +203,19 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Son Dinlenenler
+            _buildSectionHeader(
+              'Son Dinlenenler',
+              isDark,
+              onSeeAll: () {
+                context.push('/recently-played');
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildRecentlyPlayedSection(isDark),
+            
+            const SizedBox(height: 32),
+            
             // Haftanın Popüler Şarkıları
             _buildSectionHeader(
               'Haftanın Popüler Şarkıları',
@@ -462,6 +497,183 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
           ),
         ],
         ),
+      ),
+    );
+  }
+
+  // Son Dinlenenler Bölümü
+  Widget _buildRecentlyPlayedSection(bool isDark) {
+    if (_isLoadingRecent) {
+      return SizedBox(
+        height: 120,
+        child: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+          ),
+        ),
+      );
+    }
+
+    if (_recentlyPlayed.isEmpty) {
+      return Container(
+        height: 120,
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.music_note_outlined,
+                size: 40,
+                color: isDark ? Colors.grey[600] : Colors.grey[400],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Spotify\'ı bağlayın ve dinleme geçmişinizi görün',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 100,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: _recentlyPlayed.length,
+        itemBuilder: (context, index) {
+          final track = _recentlyPlayed[index];
+          return _buildRecentlyPlayedCard(track, isDark);
+        },
+      ),
+    );
+  }
+
+  // Son Dinlenenler Kartı
+  Widget _buildRecentlyPlayedCard(PlayHistory track, bool isDark) {
+    return GestureDetector(
+      onTap: () {
+        context.push('/track-detail', extra: {
+          'trackId': track.trackId,
+          'trackName': track.trackName,
+          'artistName': track.artistName,
+        });
+      },
+      child: Container(
+        width: 280,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Album Cover
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: track.albumImageUrl != null
+                  ? Image.network(
+                      track.albumImageUrl!,
+                      width: 76,
+                      height: 76,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildPlaceholderCover(isDark),
+                    )
+                  : _buildPlaceholderCover(isDark),
+            ),
+            const SizedBox(width: 12),
+            // Track Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    track.trackName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    track.artistName,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 12,
+                        color: isDark ? Colors.grey[500] : Colors.grey[500],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        track.relativeTime,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.grey[500] : Colors.grey[500],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '• ${track.formattedDuration}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? Colors.grey[500] : Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholderCover(bool isDark) {
+    return Container(
+      width: 76,
+      height: 76,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.grey[200],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(
+        Icons.music_note,
+        size: 32,
+        color: isDark ? Colors.grey[600] : Colors.grey[400],
       ),
     );
   }

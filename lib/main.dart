@@ -48,6 +48,7 @@ import 'features/music/presentation/pages/track_detail_page.dart';
 import 'features/music/presentation/pages/artist_profile_page.dart';
 import 'features/music/presentation/pages/album_detail_page.dart';
 import 'features/favorites/presentation/pages/favorites_page.dart';
+import 'features/recently_played/recently_played_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -245,6 +246,11 @@ final _router = GoRouter(
         path: '/favorites',
         name: 'favorites',
         builder: (context, state) => const FavoritesPage(),
+      ),
+      GoRoute(
+        path: '/recently-played',
+        name: 'recently-played',
+        builder: (context, state) => const RecentlyPlayedPage(),
       ),
     GoRoute(
       path: '/settings',
