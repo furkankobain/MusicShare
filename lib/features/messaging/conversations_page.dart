@@ -6,6 +6,7 @@ import '../../shared/services/messaging_service.dart';
 import '../../shared/services/firebase_bypass_auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'chat_page.dart';
+import 'user_search_page.dart';
 
 class ConversationsPage extends StatelessWidget {
   const ConversationsPage({super.key});
@@ -78,8 +79,12 @@ class ConversationsPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.search, color: isDark ? Colors.white : Colors.black87),
             onPressed: () {
-              // TODO: Implement search
-              context.push('/user-search');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserSearchPage(),
+                ),
+              );
             },
           ),
         ],
@@ -119,7 +124,12 @@ class ConversationsPage extends StatelessWidget {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          context.push('/user-search');
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const UserSearchPage(),
+            ),
+          );
         },
         backgroundColor: AppTheme.primaryColor,
         child: const Icon(Icons.add_comment, color: Colors.white),
