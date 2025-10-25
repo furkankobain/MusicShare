@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum PlaylistSource { local, spotify, synced }
+
 class MusicList {
   final String id;
   final String userId;
@@ -14,6 +16,8 @@ class MusicList {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<String> tags;
+  final String source; // 'local', 'spotify', 'synced'
+  final String? spotifyId; // Spotify playlist ID if synced
 
   MusicList({
     required this.id,
@@ -29,6 +33,8 @@ class MusicList {
     required this.createdAt,
     required this.updatedAt,
     this.tags = const [],
+    this.source = 'local',
+    this.spotifyId,
   });
 
   Map<String, dynamic> toFirestore() {
@@ -45,6 +51,8 @@ class MusicList {
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
       'tags': tags,
+      'source': source,
+      'spotifyId': spotifyId,
     };
   }
 
@@ -64,6 +72,8 @@ class MusicList {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       tags: List<String>.from(data['tags'] ?? []),
+      source: data['source'] ?? 'local',
+      spotifyId: data['spotifyId'],
     );
   }
 
@@ -81,6 +91,8 @@ class MusicList {
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? tags,
+    String? source,
+    String? spotifyId,
   }) {
     return MusicList(
       id: id ?? this.id,
@@ -96,6 +108,8 @@ class MusicList {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       tags: tags ?? this.tags,
+      source: source ?? this.source,
+      spotifyId: spotifyId ?? this.spotifyId,
     );
   }
 }

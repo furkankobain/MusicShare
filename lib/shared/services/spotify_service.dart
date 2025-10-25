@@ -493,4 +493,225 @@ class SpotifyService {
       Iterable.generate(length, (_) => chars.codeUnitAt(random.nextInt(chars.length))),
     );
   }
+
+  // ========== PLAYLIST METHODS ==========
+
+  /// Get user's playlists from Spotify
+  static Future<List<Map<String, dynamic>>> getUserPlaylists({int limit = 50}) async {
+    try {
+      await _ensureValidToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/me/playlists',
+        queryParameters: {
+          'limit': limit,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data['items'] ?? [];
+        return items.map((playlist) => {
+          'id': playlist['id'],
+          'name': playlist['name'],
+          'description': playlist['description'] ?? '',
+          'owner': playlist['owner']['display_name'] ?? '',
+          'public': playlist['public'] ?? true,
+          'collaborative': playlist['collaborative'] ?? false,
+          'tracks_count': playlist['tracks']['total'] ?? 0,
+          'images': playlist['images'] ?? [],
+          'cover_image': (playlist['images'] as List).isNotEmpty
+              ? playlist['images'][0]['url']
+              : null,
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Get user playlists error: $e');
+      return [];
+    }
+  }
+
+  /// Get tracks from a Spotify playlist
+  static Future<List<Map<String, dynamic>>> getPlaylistTracks(String playlistId) async {
+    try {
+      await _ensureValidToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/playlists/$playlistId/tracks',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data['items'] ?? [];
+        return items.map((item) {
+          final track = item['track'];
+          return {
+            'id': track['id'],
+            'name': track['name'],
+            'artists': (track['artists'] as List)
+                .map((artist) => artist['name'])
+                .join(', '),
+            'album': track['album']['name'],
+            'album_image': track['album']['images'].isNotEmpty
+                ? track['album']['images'][0]['url']
+                : null,
+            'duration_ms': track['duration_ms'],
+            'popularity': track['popularity'],
+            'added_at': item['added_at'],
+          };
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      print('Get playlist tracks error: $e');
+      return [];
+    }
+  }
+
+  /// Create a new playlist on Spotify
+  static Future<String?> createPlaylistOnSpotify({
+    required String name,
+    String? description,
+    bool isPublic = true,
+  }) async {
+    try {
+      await _ensureValidToken();
+      
+      // First, get user ID
+      final userResponse = await _dio.get(
+        '${AppConstants.baseUrl}/me',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+          },
+        ),
+      );
+
+      if (userResponse.statusCode != 200) return null;
+      
+      final userId = userResponse.data['id'];
+      
+      // Create playlist
+      final response = await _dio.post(
+        '${AppConstants.baseUrl}/users/$userId/playlists',
+        data: {
+          'name': name,
+          'description': description ?? '',
+          'public': isPublic,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 201) {
+        return response.data['id'];
+      }
+      return null;
+    } catch (e) {
+      print('Create playlist on Spotify error: $e');
+      return null;
+    }
+  }
+
+  /// Add tracks to a Spotify playlist
+  static Future<bool> addTracksToSpotifyPlaylist(
+    String playlistId,
+    List<String> trackUris,
+  ) async {
+    try {
+      await _ensureValidToken();
+      
+      final response = await _dio.post(
+        '${AppConstants.baseUrl}/playlists/$playlistId/tracks',
+        data: {
+          'uris': trackUris,
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      return response.statusCode == 201;
+    } catch (e) {
+      print('Add tracks to Spotify playlist error: $e');
+      return false;
+    }
+  }
+
+  /// Remove tracks from a Spotify playlist
+  static Future<bool> removeTracksFromSpotifyPlaylist(
+    String playlistId,
+    List<String> trackUris,
+  ) async {
+    try {
+      await _ensureValidToken();
+      
+      final response = await _dio.delete(
+        '${AppConstants.baseUrl}/playlists/$playlistId/tracks',
+        data: {
+          'tracks': trackUris.map((uri) => {'uri': uri}).toList(),
+        },
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Remove tracks from Spotify playlist error: $e');
+      return false;
+    }
+  }
+
+  /// Update playlist details on Spotify
+  static Future<bool> updateSpotifyPlaylist({
+    required String playlistId,
+    String? name,
+    String? description,
+    bool? isPublic,
+  }) async {
+    try {
+      await _ensureValidToken();
+      
+      final Map<String, dynamic> data = {};
+      if (name != null) data['name'] = name;
+      if (description != null) data['description'] = description;
+      if (isPublic != null) data['public'] = isPublic;
+
+      final response = await _dio.put(
+        '${AppConstants.baseUrl}/playlists/$playlistId',
+        data: data,
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $_accessToken',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Update Spotify playlist error: $e');
+      return false;
+    }
+  }
 }
