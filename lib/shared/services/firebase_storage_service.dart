@@ -145,6 +145,20 @@ class FirebaseStorageService {
     }
   }
 
+  /// Upload profile image from path
+  static Future<String?> uploadProfileImage({
+    required String imagePath,
+    required String userId,
+  }) async {
+    try {
+      final imageFile = File(imagePath);
+      return await uploadProfilePicture(imageFile, userId);
+    } catch (e) {
+      print('Error uploading profile image: $e');
+      return null;
+    }
+  }
+
   /// Delete playlist cover image
   static Future<bool> deletePlaylistCover(String playlistId) async {
     try {
