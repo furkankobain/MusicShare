@@ -73,6 +73,48 @@ class FirebaseStorageService {
     }
   }
 
+  /// Upload message image
+  static Future<String?> uploadMessageImage({
+    required String imagePath,
+    required String conversationId,
+  }) async {
+    try {
+      final userId = FirebaseBypassAuthService.currentUserId;
+      if (userId == null) return null;
+
+      final imageFile = File(imagePath);
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      // Create reference
+      final ref = _storage.ref().child(
+        'messages/$conversationId/$userId/$timestamp.jpg',
+      );
+
+      // Upload file
+      final uploadTask = ref.putFile(
+        imageFile,
+        SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {
+            'userId': userId,
+            'conversationId': conversationId,
+            'uploadedAt': DateTime.now().toIso8601String(),
+          },
+        ),
+      );
+
+      // Wait for upload to complete
+      final snapshot = await uploadTask;
+
+      // Get download URL
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading message image: $e');
+      return null;
+    }
+  }
+
   /// Upload user profile picture
   static Future<String?> uploadProfilePicture(File imageFile, String userId) async {
     try {

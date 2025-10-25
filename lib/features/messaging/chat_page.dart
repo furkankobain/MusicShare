@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import '../../shared/models/conversation.dart';
 import '../../shared/models/message.dart';
 import '../../shared/services/messaging_service.dart';
+import '../../shared/services/presence_service.dart';
+import '../../shared/services/firebase_storage_service.dart';
+import 'package:image_picker/image_picker.dart';
 import 'widgets/music_share_card.dart';
+import 'widgets/image_message_widget.dart';
 
 class ChatPage extends StatefulWidget {
   final Conversation conversation;
@@ -26,12 +32,92 @@ class _ChatPageState extends State<ChatPage> {
   final String _currentUserId = FirebaseAuth.instance.currentUser!.uid;
 
   bool _isTyping = false;
+  bool _isOtherUserTyping = false;
+  bool _isOtherUserOnline = false;
+  
+  // Debounce timer for typing indicator
+  Timer? _typingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToTypingStatus();
+    _listenToOnlineStatus();
+  }
 
   @override
   void dispose() {
+    _typingTimer?.cancel();
+    _updateTypingStatus(false);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _listenToTypingStatus() {
+    FirebaseFirestore.instance
+        .collection('conversations')
+        .doc(widget.conversation.id)
+        .snapshots()
+        .listen((snapshot) {
+      if (!mounted) return;
+      
+      final data = snapshot.data();
+      if (data == null) return;
+      
+      final typingStatus = data['typingStatus'] as Map<String, dynamic>?;
+      if (typingStatus == null) return;
+      
+      // Get other user's typing status
+      final otherUserId = widget.conversation.participants
+          .firstWhere((id) => id != _currentUserId);
+      
+      setState(() {
+        _isOtherUserTyping = typingStatus[otherUserId] == true;
+      });
+    });
+  }
+
+  void _listenToOnlineStatus() {
+    final otherUserId = widget.conversation.participants
+        .firstWhere((id) => id != _currentUserId);
+    
+    PresenceService.getUserOnlineStatus(otherUserId).listen((isOnline) {
+      if (mounted) {
+        setState(() {
+          _isOtherUserOnline = isOnline;
+        });
+      }
+    });
+  }
+
+  void _updateTypingStatus(bool isTyping) {
+    MessagingService.updateTypingStatus(
+      conversationId: widget.conversation.id,
+      isTyping: isTyping,
+    );
+  }
+
+  void _onTypingChanged(String text) {
+    final isCurrentlyTyping = text.isNotEmpty;
+    
+    if (isCurrentlyTyping != _isTyping) {
+      setState(() => _isTyping = isCurrentlyTyping);
+      _updateTypingStatus(isCurrentlyTyping);
+    }
+    
+    // Reset timer
+    _typingTimer?.cancel();
+    
+    if (isCurrentlyTyping) {
+      // After 2 seconds of inactivity, mark as not typing
+      _typingTimer = Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() => _isTyping = false);
+          _updateTypingStatus(false);
+        }
+      });
+    }
   }
 
   void _scrollToBottom() {
@@ -116,7 +202,151 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  void _showMessageActions(Message message, bool isMe) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.copy),
+                title: const Text('Kopyala'),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: message.content));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mesaj kopyalandı')),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.reply),
+                title: const Text('Yanıtla'),
+                onTap: () {
+                  Navigator.pop(context);
+                  // TODO: Implement reply functionality
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
+                  );
+                },
+              ),
+              if (isMe)
+                ListTile(
+                  leading: const Icon(Icons.delete, color: Colors.red),
+                  title: const Text('Sil', style: TextStyle(color: Colors.red)),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Mesajı Sil'),
+                        content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('İptal'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Sil', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true) {
+                      final success = await MessagingService.deleteMessage(message.id);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndSendImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      // Show loading
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Resim gönderiliyor...')),
+        );
+      }
+
+      // Upload image
+      final imageUrl = await FirebaseStorageService.uploadMessageImage(
+        imagePath: image.path,
+        conversationId: widget.conversation.id,
+      );
+
+      if (imageUrl != null) {
+        // Send message with image
+        await MessagingService.sendMusicShare(
+          conversationId: widget.conversation.id,
+          type: MessageType.image,
+          content: '', // Caption can be empty
+          metadata: {'imageUrl': imageUrl},
+        );
+
+        _scrollToBottom();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Resim gönderildi')),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Resim yüklenemedi')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hata: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildMessageBubble(Message message, bool isMe) {
+    // If image message
+    if (message.isImageShare) {
+      return GestureDetector(
+        onLongPress: () => _showMessageActions(message, isMe),
+        child: ImageMessageWidget(
+          message: message,
+          isMe: isMe,
+        ),
+      );
+    }
+
     // If music share, use special card
     if (message.isMusicShare) {
       return Align(
@@ -125,9 +355,12 @@ class _ChatPageState extends State<ChatPage> {
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.85,
           ),
-          child: MusicShareCard(
-            message: message,
-            isMe: isMe,
+          child: GestureDetector(
+            onLongPress: () => _showMessageActions(message, isMe),
+            child: MusicShareCard(
+              message: message,
+              isMe: isMe,
+            ),
           ),
         ),
       );
@@ -136,54 +369,105 @@ class _ChatPageState extends State<ChatPage> {
     // Regular text message
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
-        ),
-        decoration: BoxDecoration(
-          color: isMe ? Colors.blue : Colors.grey.shade200,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isMe ? 16 : 4),
-            bottomRight: Radius.circular(isMe ? 4 : 16),
+      child: GestureDetector(
+        onLongPress: () => _showMessageActions(message, isMe),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: isMe ? Colors.blue : Colors.grey.shade200,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isMe ? 16 : 4),
+              bottomRight: Radius.circular(isMe ? 4 : 16),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                message.content,
+                style: TextStyle(
+                  color: isMe ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatMessageTime(message.timestamp),
+                    style: TextStyle(
+                      color: isMe ? Colors.white70 : Colors.grey.shade600,
+                      fontSize: 11,
+                    ),
+                  ),
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      message.isRead ? Icons.done_all : Icons.done,
+                      size: 14,
+                      color: message.isRead ? Colors.blue.shade200 : Colors.white70,
+                    ),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
-                fontSize: 15,
-              ),
+      ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    if (!_isOtherUserTyping) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Text(
+            '${_getOtherUserName()} yazıyor',
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _formatMessageTime(message.timestamp),
-                  style: TextStyle(
-                    color: isMe ? Colors.white70 : Colors.grey.shade600,
-                    fontSize: 11,
-                  ),
-                ),
-                if (isMe) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    message.isRead ? Icons.done_all : Icons.done,
-                    size: 14,
-                    color: message.isRead ? Colors.blue.shade200 : Colors.white70,
-                  ),
-                ],
-              ],
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 20,
+            height: 10,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(3, (index) {
+                return TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOut,
+                  builder: (context, value, child) {
+                    return Container(
+                      width: 4,
+                      height: 4 + (value * 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade500,
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                  onEnd: () {
+                    if (mounted) setState(() {});
+                  },
+                );
+              }),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -192,7 +476,50 @@ class _ChatPageState extends State<ChatPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_getOtherUserName()),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_getOtherUserName()),
+            if (_isOtherUserTyping)
+              Text(
+                'yazıyor...',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else if (_isOtherUserOnline)
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'çevrimiçi',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
+                  ),
+                ],
+              )
+            else
+              Text(
+                'çevrimdışı',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade500,
+                ),
+              ),
+          ],
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert),
@@ -301,6 +628,9 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
 
+          // Typing Indicator
+          _buildTypingIndicator(),
+
           // Message Input
           Container(
             decoration: BoxDecoration(
@@ -316,12 +646,11 @@ class _ChatPageState extends State<ChatPage> {
             padding: const EdgeInsets.all(8),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () {
-                    // TODO: Show attachment options
-                  },
-                ),
+                // Image sharing disabled (requires Blaze Plan)
+                // IconButton(
+                //   icon: const Icon(Icons.image),
+                //   onPressed: _pickAndSendImage,
+                // ),
                 Expanded(
                   child: TextField(
                     controller: _messageController,
@@ -341,7 +670,7 @@ class _ChatPageState extends State<ChatPage> {
                     maxLines: null,
                     textCapitalization: TextCapitalization.sentences,
                     onChanged: (value) {
-                      setState(() => _isTyping = value.isNotEmpty);
+                      _onTypingChanged(value);
                     },
                     onSubmitted: (_) => _sendMessage(),
                   ),
