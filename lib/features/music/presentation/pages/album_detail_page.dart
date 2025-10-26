@@ -23,11 +23,18 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   List<Map<String, dynamic>> _tracks = [];
   double _userRating = 0.0;
   bool _isFavorite = false;
+  final TextEditingController _reviewController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _loadAlbumDetails();
+  }
+
+  @override
+  void dispose() {
+    _reviewController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAlbumDetails() async {
@@ -315,6 +322,54 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
             ],
           ),
 
+          // Stats Section
+          if (_albumDetails?['popularity'] != null)
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: ModernDesignSystem.primaryGradient,
+                  borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(
+                      icon: Icons.trending_up,
+                      label: 'Popülerlik',
+                      value: '${_albumDetails!['popularity']}/100',
+                      isDark: isDark,
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
+                    _buildStatItem(
+                      icon: Icons.music_note,
+                      label: 'Şarkı',
+                      value: '$totalTracks',
+                      isDark: isDark,
+                    ),
+                    if (totalDuration > 0) ...[
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                      _buildStatItem(
+                        icon: Icons.access_time,
+                        label: 'Süre',
+                        value: _formatDuration(totalDuration),
+                        isDark: isDark,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
           // Rating Section
           SliverToBoxAdapter(
             child: Container(
@@ -372,6 +427,54 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                         fontSize: ModernDesignSystem.fontSizeL,
                         fontWeight: FontWeight.bold,
                         color: ModernDesignSystem.accentYellow,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: _reviewController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        hintText: 'Yorumunuzu yazın...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                        ),
+                        filled: true,
+                        fillColor: isDark
+                            ? ModernDesignSystem.darkBackground
+                            : Colors.grey.withValues(alpha: 0.1),
+                      ),
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // TODO: Save review
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('İncelemeniz kaydedildi!'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          _reviewController.clear();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ModernDesignSystem.primaryGreen,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                          ),
+                        ),
+                        child: const Text(
+                          'İncelemeyi Kaydet',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -440,6 +543,39 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required bool isDark,
+  }) {
+    return Column(
+      children: [
+        Icon(
+          icon,
+          color: Colors.white,
+          size: 24,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: ModernDesignSystem.fontSizeL,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: ModernDesignSystem.fontSizeXS,
+          ),
+        ),
+      ],
     );
   }
 

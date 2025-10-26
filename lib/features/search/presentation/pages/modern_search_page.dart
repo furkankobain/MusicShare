@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/services/firebase_bypass_auth_service.dart';
 
 class ModernSearchPage extends ConsumerStatefulWidget {
   const ModernSearchPage({super.key});
@@ -65,8 +66,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
         limit: 20,
       );
 
-      // TODO: Search users from Firebase
-      final userResults = <Map<String, dynamic>>[];
+      // Search users from Firebase Bypass Auth
+      final userResults = _searchUsers(query);
 
       if (mounted) {
         setState(() {
@@ -468,8 +469,32 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     );
   }
 
+  List<Map<String, dynamic>> _searchUsers(String query) {
+    final allUsers = FirebaseBypassAuthService.allUsers;
+    final queryLower = query.toLowerCase();
+    
+    return allUsers.values
+        .where((user) =>
+            user.username.toLowerCase().contains(queryLower) ||
+            user.displayName.toLowerCase().contains(queryLower) ||
+            user.email.toLowerCase().contains(queryLower))
+        .map((user) => {
+              'userId': user.userId,
+              'username': user.username,
+              'name': user.displayName,
+              'email': user.email,
+            })
+        .toList();
+  }
+
   Widget _buildUserCard(Map<String, dynamic> user, bool isDark) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        context.push(
+          '/user-profile/${user['userId']}?username=${user['username']}',
+        );
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: isDark
@@ -527,6 +552,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
             color: isDark ? Colors.grey[600] : Colors.grey[400],
           ),
         ],
+      ),
       ),
     );
   }

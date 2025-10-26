@@ -180,6 +180,44 @@ class LastFmService {
     }
   }
 
+  /// Get similar artists
+  static Future<List<Map<String, dynamic>>> getSimilarArtists({
+    required String artist,
+    int limit = 10,
+  }) async {
+    try {
+      final url = Uri.parse(_baseUrl).replace(queryParameters: {
+        'method': 'artist.getSimilar',
+        'api_key': _apiKey,
+        'artist': artist,
+        'limit': limit.toString(),
+        'format': 'json',
+      });
+
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['similarartists']?['artist'] != null) {
+          final artists = data['similarartists']['artist'] as List;
+          return artists.map((artist) {
+            return {
+              'name': artist['name'],
+              'image': _extractLargestImage(artist['image']),
+              'url': artist['url'],
+              'match': double.tryParse(artist['match']?.toString() ?? '0') ?? 0.0,
+            };
+          }).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      print('Last.fm API error (getSimilarArtists): $e');
+      return [];
+    }
+  }
+
   /// Get artist info
   static Future<Map<String, dynamic>?> getArtistInfo({
     required String artist,

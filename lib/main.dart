@@ -37,6 +37,7 @@ import 'shared/services/app_rating_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
 import 'features/home/presentation/pages/modern_home_page.dart';
 import 'features/social/presentation/pages/social_feed_page.dart';
+import 'features/social/presentation/pages/user_profile_page.dart';
 import 'features/diary/presentation/pages/music_diary_page.dart';
 import 'features/lists/presentation/pages/music_lists_page.dart';
 import 'features/reviews/presentation/pages/reviews_page.dart';
@@ -57,6 +58,7 @@ import 'features/playlists/playlist_detail_page.dart';
 import 'features/playlists/playlist_loader_page.dart';
 import 'features/playlists/discover_playlists_page.dart';
 import 'features/playlists/qr_scanner_page.dart';
+import 'features/playlists/smart_playlists_page.dart';
 import 'features/messaging/conversations_page.dart';
 import 'shared/models/music_list.dart';
 
@@ -295,6 +297,28 @@ final _router = GoRouter(
         path: '/qr-scanner',
         name: 'qr-scanner',
         builder: (context, state) => const QrScannerPage(),
+      ),
+      GoRoute(
+        path: '/smart-playlists',
+        name: 'smart-playlists',
+        builder: (context, state) => const SmartPlaylistsPage(),
+      ),
+      GoRoute(
+        path: '/user-profile/:userId',
+        name: 'user-profile',
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          final username = state.uri.queryParameters['username'] ?? 'User';
+          return UserProfilePage(
+            userId: userId,
+            username: username,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/conversations',
+        name: 'conversations',
+        builder: (context, state) => const ConversationsPage(),
       ),
     GoRoute(
       path: '/settings',

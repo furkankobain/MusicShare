@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -636,7 +637,7 @@ class DiscoverPage extends ConsumerWidget {
   }
 
   void _showSearchDialog(BuildContext context) {
-    Navigator.pushNamed(context, '/search');
+    context.push('/search');
   }
 
   void _showNotificationsDialog(BuildContext context) {

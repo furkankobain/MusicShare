@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/services/lastfm_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ArtistProfilePage extends StatefulWidget {
@@ -24,11 +25,13 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
   List<Map<String, dynamic>> _topTracks = [];
   List<Map<String, dynamic>> _albums = [];
   Map<String, dynamic>? _artistDetails;
+  Map<String, dynamic>? _lastFmInfo;
+  List<Map<String, dynamic>> _similarArtists = [];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadArtistData();
   }
 
@@ -43,18 +46,23 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
 
     try {
       final artistId = widget.artist['id'] as String;
+      final artistName = widget.artist['name'] as String;
 
-      // Load artist details, top tracks, and albums in parallel
+      // Load artist details, top tracks, albums, Last.fm info, and similar artists in parallel
       final results = await Future.wait([
         _getArtistDetails(artistId),
         _getArtistTopTracks(artistId),
         _getArtistAlbums(artistId),
+        _getLastFmInfo(artistName),
+        _getSimilarArtists(artistName),
       ]);
 
       setState(() {
         _artistDetails = results[0] as Map<String, dynamic>?;
         _topTracks = results[1] as List<Map<String, dynamic>>;
         _albums = results[2] as List<Map<String, dynamic>>;
+        _lastFmInfo = results[3] as Map<String, dynamic>?;
+        _similarArtists = results[4] as List<Map<String, dynamic>>;
         _isLoading = false;
       });
     } catch (e) {
@@ -118,6 +126,27 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
   Future<String?> _getClientCredentialsToken() async {
     // This should be implemented in EnhancedSpotifyService
     return null;
+  }
+
+  Future<Map<String, dynamic>?> _getLastFmInfo(String artistName) async {
+    try {
+      return await LastFmService.getArtistInfo(artist: artistName);
+    } catch (e) {
+      print('Error loading Last.fm info: $e');
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getSimilarArtists(String artistName) async {
+    try {
+      return await LastFmService.getSimilarArtists(
+        artist: artistName,
+        limit: 10,
+      );
+    } catch (e) {
+      print('Error loading similar artists: $e');
+      return [];
+    }
   }
 
   String _formatFollowers(int? followers) {
@@ -284,7 +313,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                                 ),
                               ),
                             ],
-                            if (followers != null && popularity > 0)
+                            if (followers != null)
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                                 child: Text(
@@ -294,24 +323,23 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                                   ),
                                 ),
                               ),
-                            if (popularity > 0)
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.trending_up,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.headphones,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_formatFollowers(followers)} aylık dinleyici',
+                                  style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.8),
-                                    size: 16,
+                                    fontSize: ModernDesignSystem.fontSizeS,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Popülerlik: $popularity/100',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.8),
-                                      fontSize: ModernDesignSystem.fontSizeS,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ],
@@ -392,8 +420,9 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                   fontWeight: FontWeight.bold,
                 ),
                 tabs: const [
+                  Tab(text: 'Hakkında'),
                   Tab(text: 'Popüler Şarkılar'),
-                  Tab(text: 'Albümler'),
+                  Tab(text: 'Diskografi'),
                 ],
               ),
               isDark,
@@ -410,6 +439,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
               child: TabBarView(
                 controller: _tabController,
                 children: [
+                  _buildAboutTab(isDark),
                   _buildTopTracks(isDark),
                   _buildAlbums(isDark),
                 ],
@@ -430,6 +460,184 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
       return firstImage['url'] as String?;
     }
     return null;
+  }
+
+  Widget _buildAboutTab(bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bio Section
+          if (_lastFmInfo != null && _lastFmInfo!['bio'] != null) ...[
+            if (_lastFmInfo!['bio'] is Map && 
+                (_lastFmInfo!['bio'] as Map)['content'] != null) ...[
+              Text(
+                'Hakkında',
+                style: TextStyle(
+                  fontSize: ModernDesignSystem.fontSizeXL,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _cleanBioText((_lastFmInfo!['bio'] as Map)['content'] as String),
+                style: TextStyle(
+                  fontSize: ModernDesignSystem.fontSizeM,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.8)
+                      : Colors.black.withValues(alpha: 0.8),
+                  height: 1.6,
+                ),
+              ),
+              const SizedBox(height: 32),
+            ],
+          ],
+
+          // Similar Artists Section
+          if (_similarArtists.isNotEmpty) ...[
+            Text(
+              'Benzer Sanatçılar',
+              style: TextStyle(
+                fontSize: ModernDesignSystem.fontSizeXL,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+            ),
+            const SizedBox(height: 16),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+              itemCount: _similarArtists.length,
+              itemBuilder: (context, index) {
+                final artist = _similarArtists[index];
+                return _buildSimilarArtistCard(artist, isDark);
+              },
+            ),
+          ],
+
+          // Empty State
+          if ((_lastFmInfo == null || 
+               _lastFmInfo!['bio'] == null || 
+               (_lastFmInfo!['bio'] is Map && (_lastFmInfo!['bio'] as Map)['content'] == null)) &&
+              _similarArtists.isEmpty)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 64,
+                    color: Colors.grey.withValues(alpha: 0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Bilgi bulunamadı',
+                    style: TextStyle(
+                      color: Colors.grey.withValues(alpha: 0.7),
+                      fontSize: ModernDesignSystem.fontSizeM,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _cleanBioText(String bio) {
+    // Remove HTML tags and clean up Last.fm bio text
+    return bio
+        .replaceAll(RegExp(r'<[^>]*>'), '')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&amp;', '&')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  Widget _buildSimilarArtistCard(Map<String, dynamic> artist, bool isDark) {
+    final artistName = artist['name'] as String? ?? 'Unknown';
+    final imageUrl = artist['image'] as String?;
+
+    return GestureDetector(
+      onTap: () {
+        // Navigate to similar artist profile
+        // Note: We need the full artist object with ID for Spotify
+        // For now, just show a message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$artistName profili yükleniyor...')),
+        );
+      },
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? ModernDesignSystem.darkCard
+                    : ModernDesignSystem.lightCard,
+                borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                border: Border.all(
+                  color: isDark
+                      ? ModernDesignSystem.darkBorder
+                      : ModernDesignSystem.lightBorder,
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                child: imageUrl != null && imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: ModernDesignSystem.darkCard,
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: ModernDesignSystem.darkCard,
+                          child: Icon(
+                            Icons.person,
+                            size: 40,
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: ModernDesignSystem.darkCard,
+                        child: Icon(
+                          Icons.person,
+                          size: 40,
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            artistName,
+            style: TextStyle(
+              fontSize: ModernDesignSystem.fontSizeS,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white : Colors.black,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTopTracks(bool isDark) {
