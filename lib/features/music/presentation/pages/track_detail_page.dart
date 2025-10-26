@@ -11,6 +11,7 @@ import '../../../../shared/services/profile_service.dart';
 import '../../../../shared/services/rating_aggregation_service.dart';
 import '../../../../shared/services/rating_cache_service.dart';
 import '../../../../shared/widgets/aggregated_rating_display.dart';
+import '../widgets/track_recommendations_widget.dart';
 
 class TrackDetailPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> track;
@@ -324,6 +325,10 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
                     
                     // Play button
                     _buildPlayButton(isDark),
+                    const SizedBox(height: 32),
+                    
+                    // Recommendations
+                    TrackRecommendationsWidget(track: widget.track),
                     const SizedBox(height: 32),
                     
                     // Comments section

@@ -659,23 +659,35 @@ class EnhancedSpotifyService {
   /// Get track recommendations based on current track
   static Future<List<Map<String, dynamic>>> getTrackRecommendations({
     String? seedTrackId,
-    int limit = 10,
+    String? seedArtistId,
+    String? seedGenre,
+    int limit = 20,
   }) async {
     try {
-      if (!_isConnected || _accessToken == null) return [];
+      await _checkAndRefreshToken();
 
-      // Mock recommendations - replace with real API call
-      return List.generate(limit, (index) => {
-        'id': 'recommended_track_$index',
-        'name': 'Recommended Track ${index + 1}',
-        'artist': 'Recommended Artist ${index + 1}',
-        'album': 'Recommended Album ${index + 1}',
-        'image_url': 'https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5',
-        'popularity': 80 - index,
-        'preview_url': 'https://p.scdn.co/mp3-preview/recommended$index.mp3',
-        'duration_ms': 190000 + (index * 8000),
-      });
+      final Map<String, dynamic> queryParams = {'limit': limit};
+      
+      if (seedTrackId != null) queryParams['seed_tracks'] = seedTrackId;
+      if (seedArtistId != null) queryParams['seed_artists'] = seedArtistId;
+      if (seedGenre != null) queryParams['seed_genres'] = seedGenre;
+
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/recommendations',
+        queryParameters: queryParams,
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final tracks = response.data['tracks'] as List;
+        return tracks.cast<Map<String, dynamic>>();
+      }
+
+      return [];
     } catch (e) {
+      print('Error fetching recommendations: $e');
       return [];
     }
   }
