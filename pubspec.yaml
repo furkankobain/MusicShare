@@ -88,6 +88,7 @@ dependencies:
   share_plus: ^7.2.1
   qr_flutter: ^4.1.0
   pretty_qr_code: ^3.3.0
+  mobile_scanner: ^5.2.3
 
 dev_dependencies:
   flutter_test:

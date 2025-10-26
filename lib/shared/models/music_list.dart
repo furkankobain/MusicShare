@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'collaborator.dart';
 
 enum PlaylistSource { local, spotify, synced }
 
@@ -9,7 +10,7 @@ class MusicList {
   final String? description;
   final List<String> trackIds;
   final bool isPublic;
-  final List<String> collaborators;
+  final Map<String, Collaborator> collaborators; // userId -> Collaborator
   final int likeCount;
   final int commentCount;
   final String? coverImage;
@@ -26,7 +27,7 @@ class MusicList {
     this.description,
     required this.trackIds,
     this.isPublic = true,
-    this.collaborators = const [],
+    this.collaborators = const {},
     this.likeCount = 0,
     this.commentCount = 0,
     this.coverImage,
@@ -44,7 +45,7 @@ class MusicList {
       'description': description,
       'trackIds': trackIds,
       'isPublic': isPublic,
-      'collaborators': collaborators,
+      'collaborators': collaborators.map((key, value) => MapEntry(key, value.toFirestore())),
       'likeCount': likeCount,
       'commentCount': commentCount,
       'coverImage': coverImage,
@@ -65,7 +66,7 @@ class MusicList {
       description: data['description'],
       trackIds: List<String>.from(data['trackIds'] ?? []),
       isPublic: data['isPublic'] ?? true,
-      collaborators: List<String>.from(data['collaborators'] ?? []),
+      collaborators: _parseCollaborators(data['collaborators']),
       likeCount: data['likeCount'] ?? 0,
       commentCount: data['commentCount'] ?? 0,
       coverImage: data['coverImage'],
@@ -84,7 +85,7 @@ class MusicList {
     String? description,
     List<String>? trackIds,
     bool? isPublic,
-    List<String>? collaborators,
+    Map<String, Collaborator>? collaborators,
     int? likeCount,
     int? commentCount,
     String? coverImage,
@@ -111,5 +112,62 @@ class MusicList {
       source: source ?? this.source,
       spotifyId: spotifyId ?? this.spotifyId,
     );
+  }
+
+  /// Helper method to parse collaborators from Firestore
+  static Map<String, Collaborator> _parseCollaborators(dynamic data) {
+    if (data == null) return {};
+    
+    // Handle legacy format (List<String>)
+    if (data is List) {
+      return {}; // Return empty map for old data
+    }
+    
+    // Handle new format (Map<String, dynamic>)
+    if (data is Map) {
+      return Map.fromEntries(
+        data.entries.map((entry) {
+          try {
+            return MapEntry(
+              entry.key.toString(),
+              Collaborator.fromFirestore(entry.value as Map<String, dynamic>),
+            );
+          } catch (e) {
+            return null;
+          }
+        }).where((entry) => entry != null).cast<MapEntry<String, Collaborator>>(),
+      );
+    }
+    
+    return {};
+  }
+
+  /// Check if user has edit permission
+  bool canEdit(String userId) {
+    if (this.userId == userId) return true; // Owner always can edit
+    
+    final collaborator = collaborators[userId];
+    if (collaborator == null) return false;
+    
+    return collaborator.role == CollaboratorRole.owner ||
+           collaborator.role == CollaboratorRole.editor;
+  }
+
+  /// Check if user has manage permission (add/remove collaborators)
+  bool canManage(String userId) {
+    if (this.userId == userId) return true; // Owner always can manage
+    
+    final collaborator = collaborators[userId];
+    if (collaborator == null) return false;
+    
+    return collaborator.role == CollaboratorRole.owner;
+  }
+
+  /// Check if user can view
+  bool canView(String userId) {
+    if (isPublic) return true; // Public playlists can be viewed by anyone
+    if (this.userId == userId) return true; // Owner can always view
+    
+    return collaborators.containsKey(userId); // Collaborators can view
   }
 }

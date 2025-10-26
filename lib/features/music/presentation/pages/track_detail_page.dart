@@ -8,6 +8,9 @@ import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/favorites_service.dart';
 import '../../../../shared/services/profile_service.dart';
+import '../../../../shared/services/rating_aggregation_service.dart';
+import '../../../../shared/services/rating_cache_service.dart';
+import '../../../../shared/widgets/aggregated_rating_display.dart';
 
 class TrackDetailPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> track;
@@ -30,6 +33,8 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
   bool _isPlaying = false;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isLoadingAudio = false;
+  AggregatedRating? _aggregatedRating;
+  bool _isLoadingRating = true;
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     _checkFavoriteStatus();
     _checkPinnedStatus();
     _setupAudioPlayer();
+    _loadAggregatedRating();
   }
 
   @override
@@ -62,6 +68,34 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
       final isPinned = await ProfileService.isTrackPinned(trackId);
       if (mounted) {
         setState(() => _isPinned = isPinned);
+      }
+    }
+  }
+
+  Future<void> _loadAggregatedRating() async {
+    final trackId = widget.track['id'] as String?;
+    final trackName = widget.track['name'] as String?;
+    final artistName = (widget.track['artists'] as List?)?.first?['name'] as String?;
+    final popularity = widget.track['popularity'] as int?;
+
+    if (trackId != null && trackName != null && artistName != null) {
+      // Cache sistemi ile rating getir
+      final rating = await RatingCacheService.getRatingWithCache(
+        trackId: trackId,
+        trackName: trackName,
+        artistName: artistName,
+        spotifyPopularity: popularity,
+      );
+
+      if (mounted) {
+        setState(() {
+          _aggregatedRating = rating;
+          _isLoadingRating = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() => _isLoadingRating = false);
       }
     }
   }
@@ -271,6 +305,18 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
                     // Stats row
                     _buildStatsRow(duration, popularity, isDark),
                     const SizedBox(height: 32),
+                    
+                    // Aggregated Rating
+                    if (_isLoadingRating)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_aggregatedRating != null)
+                      AggregatedRatingDisplay(
+                        rating: _aggregatedRating!,
+                        showBreakdown: true,
+                        showStats: true,
+                        compact: false,
+                      ),
+                    const SizedBox(height: 24),
                     
                     // Rating section
                     _buildRatingSection(isDark),

@@ -3,9 +3,11 @@ import '../../shared/models/music_list.dart';
 import '../../shared/services/playlist_service.dart';
 import '../../shared/services/playlist_sync_service.dart';
 import '../../shared/services/enhanced_spotify_service.dart';
+import '../../shared/services/firebase_bypass_auth_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'widgets/add_track_bottom_sheet.dart';
 import 'widgets/playlist_share_bottom_sheet.dart';
+import 'widgets/manage_collaborators_bottom_sheet.dart';
 
 class PlaylistDetailPage extends StatefulWidget {
   final MusicList playlist;
@@ -175,6 +177,14 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
             icon: Icon(Icons.more_vert, color: isDark ? Colors.white : Colors.black87),
             onSelected: (value) {
               switch (value) {
+                case 'manage':
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => ManageCollaboratorsBottomSheet(playlist: _playlist),
+                  );
+                  break;
                 case 'share':
                   showModalBottomSheet(
                     context: context,
@@ -192,6 +202,17 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               }
             },
             itemBuilder: (context) => [
+              if (_playlist.canManage(FirebaseBypassAuthService.currentUserId ?? ''))
+                const PopupMenuItem(
+                  value: 'manage',
+                  child: Row(
+                    children: [
+                      Icon(Icons.people, size: 20),
+                      SizedBox(width: 12),
+                      Text('İşbirlikçileri Yönet'),
+                    ],
+                  ),
+                ),
               const PopupMenuItem(
                 value: 'share',
                 child: Row(

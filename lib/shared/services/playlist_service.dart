@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/music_list.dart';
+import '../models/collaborator.dart';
 import 'firebase_bypass_auth_service.dart';
+import 'in_app_notification_service.dart';
 
 class PlaylistService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -144,9 +146,9 @@ class PlaylistService {
       final userId = FirebaseBypassAuthService.currentUserId;
       if (userId == null) return false;
 
-      // Verify ownership
+      // Verify ownership or edit permission
       final playlist = await getPlaylist(playlistId);
-      if (playlist == null || playlist.userId != userId) return false;
+      if (playlist == null || !playlist.canEdit(userId)) return false;
 
       // Check if track already exists
       if (playlist.trackIds.contains(trackId)) return true;
@@ -169,9 +171,9 @@ class PlaylistService {
       final userId = FirebaseBypassAuthService.currentUserId;
       if (userId == null) return false;
 
-      // Verify ownership
+      // Verify ownership or edit permission
       final playlist = await getPlaylist(playlistId);
-      if (playlist == null || playlist.userId != userId) return false;
+      if (playlist == null || !playlist.canEdit(userId)) return false;
 
       await _firestore.collection(_collection).doc(playlistId).update({
         'trackIds': FieldValue.arrayRemove([trackId]),
@@ -194,9 +196,9 @@ class PlaylistService {
       final userId = FirebaseBypassAuthService.currentUserId;
       if (userId == null) return false;
 
-      // Verify ownership
+      // Verify ownership or edit permission
       final playlist = await getPlaylist(playlistId);
-      if (playlist == null || playlist.userId != userId) return false;
+      if (playlist == null || !playlist.canEdit(userId)) return false;
 
       await _firestore.collection(_collection).doc(playlistId).update({
         'trackIds': newTrackIds,
@@ -244,5 +246,169 @@ class PlaylistService {
       print('Error searching playlists: $e');
       return [];
     }
+  }
+
+  // ==================== COLLABORATION METHODS ====================
+
+  /// Add a collaborator to playlist
+  static Future<bool> addCollaborator({
+    required String playlistId,
+    required String userId,
+    required String username,
+    String? displayName,
+    String? photoURL,
+    required CollaboratorRole role,
+  }) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      // Verify management permission
+      final playlist = await getPlaylist(playlistId);
+      if (playlist == null || !playlist.canManage(currentUserId)) return false;
+
+      // Cannot add yourself
+      if (userId == currentUserId) return false;
+
+      // Create collaborator
+      final collaborator = Collaborator(
+        userId: userId,
+        username: username,
+        displayName: displayName,
+        photoURL: photoURL,
+        role: role,
+        addedAt: DateTime.now(),
+        addedBy: currentUserId,
+      );
+
+      await _firestore.collection(_collection).doc(playlistId).update({
+        'collaborators.$userId': collaborator.toFirestore(),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+
+      // Send notification to the added collaborator
+      await InAppNotificationService.sendCollaboratorNotification(
+        recipientUserId: userId,
+        playlistId: playlistId,
+        playlistTitle: playlist.title,
+        role: role.displayName,
+      );
+
+      return true;
+    } catch (e) {
+      print('Error adding collaborator: $e');
+      return false;
+    }
+  }
+
+  /// Remove a collaborator from playlist
+  static Future<bool> removeCollaborator({
+    required String playlistId,
+    required String collaboratorUserId,
+  }) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      // Verify management permission
+      final playlist = await getPlaylist(playlistId);
+      if (playlist == null || !playlist.canManage(currentUserId)) return false;
+
+      // Cannot remove the original owner
+      if (collaboratorUserId == playlist.userId) return false;
+
+      await _firestore.collection(_collection).doc(playlistId).update({
+        'collaborators.$collaboratorUserId': FieldValue.delete(),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+
+      return true;
+    } catch (e) {
+      print('Error removing collaborator: $e');
+      return false;
+    }
+  }
+
+  /// Update collaborator role
+  static Future<bool> updateCollaboratorRole({
+    required String playlistId,
+    required String collaboratorUserId,
+    required CollaboratorRole newRole,
+  }) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      // Verify management permission
+      final playlist = await getPlaylist(playlistId);
+      if (playlist == null || !playlist.canManage(currentUserId)) return false;
+
+      // Cannot change the original owner's role
+      if (collaboratorUserId == playlist.userId) return false;
+
+      final collaborator = playlist.collaborators[collaboratorUserId];
+      if (collaborator == null) return false;
+
+      final updatedCollaborator = collaborator.copyWith(role: newRole);
+
+      await _firestore.collection(_collection).doc(playlistId).update({
+        'collaborators.$collaboratorUserId': updatedCollaborator.toFirestore(),
+        'updatedAt': Timestamp.fromDate(DateTime.now()),
+      });
+
+      return true;
+    } catch (e) {
+      print('Error updating collaborator role: $e');
+      return false;
+    }
+  }
+
+  /// Get playlists where user is a collaborator
+  static Stream<List<MusicList>> getCollaborativePlaylists() {
+    final userId = FirebaseBypassAuthService.currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _firestore
+        .collection(_collection)
+        .where('collaborators.$userId', isNull: false)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => MusicList.fromFirestore(doc))
+            .toList());
+  }
+
+  /// Get all playlists (owned + collaborative)
+  static Stream<List<MusicList>> getAllUserPlaylists() {
+    final userId = FirebaseBypassAuthService.currentUserId;
+    if (userId == null) return Stream.value([]);
+
+    return _firestore
+        .collection(_collection)
+        .where('userId', isEqualTo: userId)
+        .orderBy('updatedAt', descending: true)
+        .snapshots()
+        .asyncMap((ownedSnapshot) async {
+      // Get owned playlists
+      final ownedPlaylists = ownedSnapshot.docs
+          .map((doc) => MusicList.fromFirestore(doc))
+          .toList();
+
+      // Get collaborative playlists
+      final collabSnapshot = await _firestore
+          .collection(_collection)
+          .where('collaborators.$userId', isNull: false)
+          .get();
+
+      final collabPlaylists = collabSnapshot.docs
+          .map((doc) => MusicList.fromFirestore(doc))
+          .toList();
+
+      // Combine and sort
+      final allPlaylists = [...ownedPlaylists, ...collabPlaylists];
+      allPlaylists.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+
+      return allPlaylists;
+    });
   }
 }

@@ -13,6 +13,7 @@ import 'shared/services/enhanced_spotify_service.dart';
 import 'shared/services/enhanced_auth_service.dart';
 import 'shared/services/simple_auth_service.dart';
 import 'shared/services/firebase_bypass_auth_service.dart';
+import 'shared/services/popular_tracks_seed_service.dart';
 import 'features/auth/presentation/pages/enhanced_login_page.dart';
 import 'features/auth/presentation/pages/enhanced_signup_page.dart';
 import 'features/auth/presentation/pages/spotify_connect_page.dart';
@@ -72,6 +73,9 @@ void main() async {
   
   // Initialize Enhanced Spotify Service
   await EnhancedSpotifyService.loadConnectionState();
+  
+  // Initialize popular tracks seed (background, don't wait)
+  PopularTracksSeedService.initializeSeed();
   
   // Initialize App Rating
   await AppRatingService.recordFirstLaunch();
