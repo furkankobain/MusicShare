@@ -6,12 +6,22 @@ Letterboxd'den ilham alan, müzik severler için modern bir müzik keşif ve pay
 
 ### 🎵 Müzik Özellikleri
 - **Müzik Değerlendirme Sistemi** - Favori şarkılarını puanla ve yorumla
-- **Gelişmiş Arama** - Sanatçı, albüm veya şarkı bazında ara
+- **Gelişmiş Arama** - Sanatçı, albüm, şarkı ve kullanıcı bazında ara
 - **Spotify Entegrasyonu** - Spotify hesabınla bağlan ve playlistlerini içe aktar
+- **Discovery & Recommendations** - Spotify API ve Last.fm ile kişiselleştirilmiş öneriler
 - **Playlist Yönetimi** - Kendi playlistlerini oluştur ve yönet
+- **Akıllı Playlistler** - Ruh hali, tür, dönem ve aktivite bazlı otomatik playlistler
 - **Playlist Etiketleri** - Playlistlerini kategorize et ve organize et
 - **Playlist Keşfi** - Diğer kullanıcıların public playlistlerini keşfet
+- **QR Kod Paylaşımı** - Playlistleri QR kod ile kolayca paylaş
 - **Müzik Paylaşımı** - Şarkı, albüm ve playlist paylaş
+
+### 👥 Sosyal Özellikler
+- **Kullanıcı Profilleri** - Detaylı profil sayfaları (incelemeler, listeler, favoriler, aktivite)
+- **Takip Sistemi** - Diğer kullanıcıları takip et/takipten çık
+- **Sosyal Feed** - Takip ettiğin kullanıcıların aktivitelerini gör
+- **Kullanıcı Arama** - Username, email veya isim ile kullanıcı ara
+- **Profil İstatistikleri** - Takipçi, takip, inceleme ve liste sayıları
 
 ### 💬 Mesajlaşma (DM) Özellikleri
 - **Gerçek Zamanlı Mesajlaşma** - Anlık mesajlaşma desteği
@@ -107,6 +117,40 @@ lib/
 
 ## ✅ Tamamlanan Özellikler
 
+### Discovery & Recommendations (Keşif ve Öneriler)
+- ✅ **Spotify Recommendations API** - Kişiselleştirilmiş şarkı önerileri
+- ✅ **Last.fm Benzer Şarkılar** - Benzer şarkı keşfi
+- ✅ **Track Detail Önerileri** - Her şarkı sayfasında ilgili öneriler
+
+### Enhanced Artist & Album Pages (Gelişmiş Sanatçı ve Albüm Sayfaları)
+- ✅ **Artist Detail Page** - 3 tab (Hakkında, Popüler Şarkılar, Diskografi)
+- ✅ **Last.fm Entegrasyonu** - Sanatçı biyografisi ve benzer sanatçılar
+- ✅ **Aylık Dinleyici** - Spotify follower verisi gösterimi
+- ✅ **Album Detail Page** - İstatistikler, review/rating sistemi
+- ✅ **Şarkı Listesi** - Tam track list ile entegre detay
+
+### Social Features (Sosyal Özellikler)
+- ✅ **User Profile Pages** - Detaylı kullanıcı profil sayfaları
+- ✅ **Takip Sistemi** - Follow/Unfollow özelliği
+- ✅ **Kullanıcı Arama** - Gelişmiş kullanıcı arama sistemi
+- ✅ **Social Feed** - Aktivite feed (Tümü, Takip, Popüler)
+- ✅ **Profil Tabları** - İncelemeler, Listeler, Favori, Aktivite
+
+### Advanced Filtering & Sorting (Gelişmiş Filtreleme)
+- ✅ **Genre Filtreleme** - 12+ müzik türü filtresi
+- ✅ **Yıl Aralığı** - Min/max yıl seçimi
+- ✅ **Popülerlik ve Rating** - Slider ile hassas filtreleme
+- ✅ **Sıralama Seçenekleri** - En Yeni, En Popüler, En Yüksek Puan, Alfabetik
+- ✅ **Modern Bottom Sheet** - Kullanıcı dostu arayüz
+
+### Smart Playlists (Akıllı Playlistler)
+- ✅ **Ruh Hali Bazlı** - Enerjik, Sakin, Mutlu, Konsantrasyon
+- ✅ **Tür Bazlı** - Rock, Pop, Hip Hop koleksiyonları
+- ✅ **Dönem Bazlı** - 90'lar, 2000'ler, 2010'lar nostalji listeleri
+- ✅ **Aktivite Bazlı** - Spor, Parti için optimize listeler
+- ✅ **Otomatik Oluşturma** - Kullanıcı kütüphanesine göre
+- ✅ **Modern Gradient Cards** - Görsel olarak zengin tasarım
+
 ### Collaborative Playlists (Ortak Playlistler)
 - ✅ **Rol Tabanlı İzinler** - Owner, Editor, Viewer rolleri
 - ✅ **İşbirlikçi Yönetimi** - Kullanıcı ekleme/çıkarma, rol değiştirme
@@ -126,16 +170,16 @@ lib/
 
 ## 🔮 Yaklaşan Özellikler
 
-- [ ] **QR Scanner** - Kamera ile QR kod okuma
+- [ ] **QR Scanner** - Kamera ile QR kod okuma ✨ (Hazır, test edilecek)
 - [ ] **Deep Linking** - QR koddan playlist açma
-- [ ] **Playlist Analytics** - Detaylı istatistikler
-- [ ] **Smart Playlist Generation** - AI destekli playlist oluşturma
+- [ ] **Playlist Analytics** - Detaylı istatistikler (toplam süre, en çok eklenen)
 - [ ] **Playlist Comments & Ratings** - Sosyal özellikler
 - [ ] **Multi-Platform Export** - Apple Music, YouTube Music desteği
 - [ ] **Offline Mode** - Çevrimdışı kullanım
 - [ ] **Version Control** - Playlist geçmişi
-- [ ] **Advanced Filtering** - Gelişmiş filtreleme
 - [ ] **Push Notifications** - Cloud Functions ile bildirimler
+- [ ] **Music Player** - Uygulama içi oynatıcı
+- [ ] **Lyrics Integration** - Şarkı sözleri entegrasyonu
 
 ## 🤝 Katkıda Bulunma
 
