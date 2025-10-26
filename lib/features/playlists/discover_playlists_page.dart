@@ -103,6 +103,29 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            tooltip: 'QR Kod Tara',
+            onPressed: () async {
+              final playlistId = await context.push('/qr-scanner');
+              if (playlistId != null && mounted) {
+                // TODO: Fetch and show playlist by ID
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Playlist bulundu: $playlistId'),
+                    action: SnackBarAction(
+                      label: 'Aç',
+                      onPressed: () {
+                        // Navigate to playlist
+                      },
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(120),
           child: Column(

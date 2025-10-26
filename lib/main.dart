@@ -39,7 +39,7 @@ import 'features/home/presentation/pages/modern_home_page.dart';
 import 'features/social/presentation/pages/social_feed_page.dart';
 import 'features/diary/presentation/pages/music_diary_page.dart';
 import 'features/lists/presentation/pages/music_lists_page.dart';
-import 'features/notes/presentation/pages/notes_page.dart';
+import 'features/reviews/presentation/pages/reviews_page.dart';
 import 'features/music/presentation/pages/spotify_tracks_page.dart';
 import 'features/music/presentation/pages/spotify_albums_page.dart';
 // import 'features/music/presentation/pages/create_playlist_page.dart'; // Removed - using playlists version
@@ -54,7 +54,9 @@ import 'features/playlists/user_playlists_page.dart';
 import 'features/playlists/create_playlist_page.dart';
 import 'features/playlists/import_spotify_playlists_page.dart';
 import 'features/playlists/playlist_detail_page.dart';
+import 'features/playlists/playlist_loader_page.dart';
 import 'features/playlists/discover_playlists_page.dart';
+import 'features/playlists/qr_scanner_page.dart';
 import 'features/messaging/conversations_page.dart';
 import 'shared/models/music_list.dart';
 
@@ -200,9 +202,9 @@ final _router = GoRouter(
         builder: (context, state) => const MusicListsPage(),
       ),
       GoRoute(
-        path: '/notes',
-        name: 'notes',
-        builder: (context, state) => const NotesPage(),
+        path: '/reviews',
+        name: 'reviews',
+        builder: (context, state) => const ReviewsPage(),
       ),
       GoRoute(
         path: '/spotify-tracks',
@@ -261,7 +263,7 @@ final _router = GoRouter(
       GoRoute(
         path: '/playlists',
         name: 'playlists',
-        builder: (context, state) => const UserPlaylistsPage(),
+        builder: (context, state) => const UserPlaylistsPage(showBackButton: true),
       ),
       GoRoute(
         path: '/create-playlist',
@@ -280,6 +282,19 @@ final _router = GoRouter(
           final playlist = state.extra as MusicList;
           return PlaylistDetailPage(playlist: playlist);
         },
+      ),
+      GoRoute(
+        path: '/playlist/:playlistId',
+        name: 'playlist-by-id',
+        builder: (context, state) {
+          final playlistId = state.pathParameters['playlistId']!;
+          return PlaylistLoaderPage(playlistId: playlistId);
+        },
+      ),
+      GoRoute(
+        path: '/qr-scanner',
+        name: 'qr-scanner',
+        builder: (context, state) => const QrScannerPage(),
       ),
     GoRoute(
       path: '/settings',

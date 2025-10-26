@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/models/music_note.dart';
+import '../../../../shared/models/music_review.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/spotify/spotify_connect_button.dart';
 
@@ -132,7 +132,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoteCard(MusicNote note, bool isDark, {bool isFeatured = false}) {
+  Widget _buildNoteCard(MusicReview review, bool isDark, {bool isFeatured = false}) {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? Colors.grey[850] : Colors.white,
@@ -163,7 +163,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                   radius: 24,
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
                   child: Text(
-                    note.username[0].toUpperCase(),
+                    review.username[0].toUpperCase(),
                     style: TextStyle(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
@@ -179,7 +179,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                       Row(
                         children: [
                           Text(
-                            note.username,
+                            review.username,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -209,13 +209,13 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                               ),
                             ),
                           ],
-                          if (note.rating != null) ...[
+                          if (review.rating != null) ...[
                             const SizedBox(width: 8),
                             Row(
                               children: List.generate(
                                 5,
                                 (index) => Icon(
-                                  index < note.rating! ? Icons.star : Icons.star_border,
+                                  index < review.rating! ? Icons.star : Icons.star_border,
                                   size: 14,
                                   color: Colors.amber,
                                 ),
@@ -226,7 +226,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatTimestamp(note.createdAt),
+                        _formatTimestamp(review.createdAt),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? Colors.grey[500] : Colors.grey[500],
@@ -269,7 +269,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          note.trackName,
+                          review.trackName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -280,7 +280,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          note.artists,
+                          review.artists,
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -302,7 +302,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              note.noteText,
+              review.reviewText,
               style: TextStyle(
                 fontSize: 15,
                 height: 1.5,
@@ -314,14 +314,14 @@ class EnhancedDiscoverPage extends ConsumerWidget {
           ),
 
           // Tags
-          if (note.tags.isNotEmpty) ...[
+          if (review.tags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: note.tags.take(3).map((tag) {
+                children: review.tags.take(3).map((tag) {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -359,7 +359,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${note.likeCount}',
+                  '${review.likeCount}',
                   style: TextStyle(
                     color: isDark ? Colors.grey[400] : Colors.grey[600],
                     fontSize: 14,
@@ -374,7 +374,7 @@ class EnhancedDiscoverPage extends ConsumerWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${note.commentCount}',
+                  '${review.replyCount}',
                   style: TextStyle(
                     color: isDark ? Colors.grey[400] : Colors.grey[600],
                     fontSize: 14,
@@ -467,9 +467,9 @@ class EnhancedDiscoverPage extends ConsumerWidget {
     }
   }
 
-  List<MusicNote> _getMockFeaturedNotes() {
+  List<MusicReview> _getMockFeaturedNotes() {
     return [
-      MusicNote(
+      MusicReview(
         id: 'featured_1',
         userId: 'user_1',
         username: 'Melodi Avcısı',
@@ -477,14 +477,14 @@ class EnhancedDiscoverPage extends ConsumerWidget {
         trackName: 'Bohemian Rhapsody',
         artists: 'Queen',
         rating: 5,
-        noteText: 'Müzik tarihinin걸작lerinden biri! Her dinlediğimde farklı katmanlar keşfediyorum. Freddie Mercury\'nin vokali efsanevi, Brian May\'in gitar soloları mükemmel. 6 dakikalık bir opera rock şaheseri.',
+        reviewText: 'Müzik tarihinin걸작lerinden biri! Her dinlediğimde farklı katmanlar keşfediyorum. Freddie Mercury\'nin vokali efsanevi, Brian May\'in gitar soloları mükemmel. 6 dakikalık bir opera rock şaheseri.',
         tags: ['klasik', 'rock', 'efsane'],
         likeCount: 342,
-        commentCount: 45,
+        replyCount: 45,
         createdAt: DateTime.now().subtract(const Duration(hours: 5)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 5)),
       ),
-      MusicNote(
+      MusicReview(
         id: 'featured_2',
         userId: 'user_2',
         username: 'Ritim Tutkunu',
@@ -492,19 +492,19 @@ class EnhancedDiscoverPage extends ConsumerWidget {
         trackName: 'Billie Jean',
         artists: 'Michael Jackson',
         rating: 5,
-        noteText: 'Pop müziğin zirvesi! Bass line efsanevi, ritim mükemmel. Michael\'ın dans hareketleriyle birleşince ortaya benzersiz bir sanat eseri çıkıyor.',
+        reviewText: 'Pop müziğin zirvesi! Bass line efsanevi, ritim mükemmel. Michael\'ın dans hareketleriyle birleşince ortaya benzersiz bir sanat eseri çıkıyor.',
         tags: ['pop', 'dans', 'klasik'],
         likeCount: 289,
-        commentCount: 38,
+        replyCount: 38,
         createdAt: DateTime.now().subtract(const Duration(hours: 8)),
         updatedAt: DateTime.now().subtract(const Duration(hours: 8)),
       ),
     ];
   }
 
-  List<MusicNote> _getMockRandomNotes() {
+  List<MusicReview> _getMockRandomNotes() {
     return List.generate(3, (index) {
-      return MusicNote(
+      return MusicReview(
         id: 'random_$index',
         userId: 'user_${index + 10}',
         username: 'Müzik Sever ${index + 1}',
@@ -512,14 +512,14 @@ class EnhancedDiscoverPage extends ConsumerWidget {
         trackName: 'Rastgele Şarkı ${index + 1}',
         artists: 'Sanatçı Adı',
         rating: 3 + index,
-        noteText: index == 0
+        reviewText: index == 0
             ? 'İlk dinleyişte çok etkiledi. Melodi kulağımda kaldı, hala mırıldanıyorum.'
             : index == 1
             ? 'Sözler çok anlamlı. Enstrümantasyon da gayet başarılı.'
             : 'Güzel bir parça ama biraz daha orijinal olabilirdi.',
         tags: index == 0 ? ['yeni', 'keşfet'] : [],
         likeCount: 15 + index * 8,
-        commentCount: 3 + index * 2,
+        replyCount: 3 + index * 2,
         createdAt: DateTime.now().subtract(Duration(hours: 10 + index * 3)),
         updatedAt: DateTime.now().subtract(Duration(hours: 10 + index * 3)),
       );

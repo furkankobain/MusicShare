@@ -1,12 +1,12 @@
 import 'dart:convert';
-import 'dart:math';
-import 'package:http/http.dart' as http;
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 
 /// Last.fm API Service for track ratings and metadata
 /// Get your API key from: https://www.last.fm/api/account/create
 class LastFmService {
-  static const String _apiKey = 'YOUR_LASTFM_API_KEY'; // TODO: Add your API key
+  static const String _apiKey = 'c4ba70b84c3df6294775863ab41865e8';
+  static const String _sharedSecret = 'ec2feb05d1db45c641d65817fcb0a220'; // For future OAuth if needed
   static const String _baseUrl = 'https://ws.audioscrobbler.com/2.0/';
 
   /// Get track info including play count and listeners
@@ -231,13 +231,13 @@ class LastFmService {
     final avgPlaysPerListener = playcount / listeners;
     
     // Normalize playcount (log scale)
-    final normalizedPlaycount = (playcount.toDouble().clamp(1, 1000000000)).log10() / 9; // Max 1B plays = 9
+    final normalizedPlaycount = (playcount.toDouble().clamp(1.0, 1000000000.0)).log10() / 9; // Max 1B plays = 9
     
     // Normalize listeners (log scale)
-    final normalizedListeners = (listeners.toDouble().clamp(1, 100000000)).log10() / 8; // Max 100M listeners = 8
+    final normalizedListeners = (listeners.toDouble().clamp(1.0, 100000000.0)).log10() / 8; // Max 100M listeners = 8
     
     // Normalize avg plays per listener (log scale, more plays = more engaging)
-    final normalizedAvgPlays = (avgPlaysPerListener.clamp(1, 1000)).log10() / 3; // Max 1000 avg plays
+    final normalizedAvgPlays = (avgPlaysPerListener.clamp(1.0, 1000.0)).log10() / 3; // Max 1000 avg plays
     
     // Weight: 40% playcount, 40% listeners, 20% engagement
     final score = (normalizedPlaycount * 0.4) + 

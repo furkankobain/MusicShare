@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../shared/models/music_list.dart';
 import '../../shared/services/playlist_service.dart';
 import '../../shared/services/playlist_sync_service.dart';
@@ -70,7 +71,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Spotify\'a aktarıldı!')),
       );
-      Navigator.pop(context);
+      context.pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Spotify\'a aktarılamadı')),
@@ -143,7 +144,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     if (!mounted) return;
 
     if (success) {
-      Navigator.pop(context);
+      context.pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Silinemedi')),
@@ -170,7 +171,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         ),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
         ),
         actions: [
           PopupMenuButton<String>(

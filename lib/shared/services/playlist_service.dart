@@ -59,6 +59,9 @@ class PlaylistService {
     }
   }
 
+  /// Get a playlist by ID (alias for deep linking)
+  static Future<MusicList?> getPlaylistById(String playlistId) => getPlaylist(playlistId);
+
   /// Get all playlists for current user
   static Stream<List<MusicList>> getUserPlaylists() {
     final userId = FirebaseBypassAuthService.currentUserId;

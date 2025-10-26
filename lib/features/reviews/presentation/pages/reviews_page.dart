@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../shared/models/music_note.dart';
+import '../../../../shared/models/music_review.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'review_detail_page.dart';
 
-class NotesPage extends ConsumerStatefulWidget {
-  const NotesPage({super.key});
+class ReviewsPage extends ConsumerStatefulWidget {
+  const ReviewsPage({super.key});
 
   @override
-  ConsumerState<NotesPage> createState() => _NotesPageState();
+  ConsumerState<ReviewsPage> createState() => _ReviewsPageState();
 }
 
-class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProviderStateMixin {
+class _ReviewsPageState extends ConsumerState<ReviewsPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -37,7 +38,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
         elevation: 0,
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         title: const Text(
-          'Notes',
+          'Reviews',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
@@ -55,36 +56,36 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildFriendsNotes(isDark),
-          _buildPopularNotes(isDark),
-          _buildRecentNotes(isDark),
+          _buildFriendsReviews(isDark),
+          _buildPopularReviews(isDark),
+          _buildRecentReviews(isDark),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showCreateNoteDialog(context, isDark),
+        onPressed: () => _showCreateReviewDialog(context, isDark),
         backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.edit),
-        label: const Text('Not Yaz'),
+        label: const Text('Review Yaz'),
       ),
     );
   }
 
-  Widget _buildFriendsNotes(bool isDark) {
-    final mockNotes = _getMockNotes();
+  Widget _buildFriendsReviews(bool isDark) {
+    final mockReviews = _getMockReviews();
 
-    if (mockNotes.isEmpty) {
+    if (mockReviews.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.note_alt_outlined,
+              Icons.rate_review_outlined,
               size: 64,
               color: isDark ? Colors.grey[700] : Colors.grey[300],
             ),
             const SizedBox(height: 16),
             Text(
-              'Henüz not yok',
+              'Henüz review yok',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -93,7 +94,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
             ),
             const SizedBox(height: 8),
             Text(
-              'Arkadaşlarınız not paylaştığında burada görünecek',
+              'Arkadaşlarınız review paylaştığında burada görünecek',
               style: TextStyle(
                 color: isDark ? Colors.grey[500] : Colors.grey[500],
               ),
@@ -110,23 +111,23 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: mockNotes.length,
+        itemCount: mockReviews.length,
         itemBuilder: (context, index) {
-          return _buildNoteCard(mockNotes[index], isDark);
+          return _buildReviewCard(mockReviews[index], isDark);
         },
       ),
     );
   }
 
-  Widget _buildPopularNotes(bool isDark) {
-    return _buildFriendsNotes(isDark);
+  Widget _buildPopularReviews(bool isDark) {
+    return _buildFriendsReviews(isDark);
   }
 
-  Widget _buildRecentNotes(bool isDark) {
-    return _buildFriendsNotes(isDark);
+  Widget _buildRecentReviews(bool isDark) {
+    return _buildFriendsReviews(isDark);
   }
 
-  Widget _buildNoteCard(MusicNote note, bool isDark) {
+  Widget _buildReviewCard(MusicReview review, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -148,7 +149,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
                   radius: 24,
                   backgroundColor: AppTheme.primaryColor.withOpacity(0.2),
                   child: Text(
-                    note.username[0].toUpperCase(),
+                    review.username[0].toUpperCase(),
                     style: TextStyle(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
@@ -161,23 +162,23 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Text(
-                            note.username,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: isDark ? Colors.white : Colors.black87,
+                        Row(
+                          children: [
+                            Text(
+                              review.username,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
                             ),
-                          ),
-                          if (note.rating != null) ...[
-                            const SizedBox(width: 8),
-                            Row(
-                              children: List.generate(
-                                5,
-                                (index) => Icon(
-                                  index < note.rating! ? Icons.star : Icons.star_border,
+                            if (review.rating != null) ...[
+                              const SizedBox(width: 8),
+                              Row(
+                                children: List.generate(
+                                  5,
+                                  (index) => Icon(
+                                    index < review.rating! ? Icons.star : Icons.star_border,
                                   size: 14,
                                   color: Colors.amber,
                                 ),
@@ -188,7 +189,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatTimestamp(note.createdAt),
+                        _formatTimestamp(review.createdAt),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? Colors.grey[500] : Colors.grey[500],
@@ -237,7 +238,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          note.trackName,
+                          review.trackName,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -248,7 +249,7 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          note.artists,
+                          review.artists,
                           style: TextStyle(
                             fontSize: 13,
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -271,62 +272,28 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
 
           const SizedBox(height: 16),
 
-          // Note Text
+          // Review Text
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (note.containsSpoiler)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.red.withOpacity(0.5)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          size: 14,
-                          color: Colors.red[300],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Spoiler İçerir',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.red[300],
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                Text(
-                  note.noteText,
+            child: Text(
+              review.reviewText,
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
-                    color: isDark ? Colors.grey[200] : Colors.grey[800],
-                  ),
+                  color: isDark ? Colors.grey[200] : Colors.grey[800],
                 ),
-              ],
-            ),
+              ),
           ),
 
           // Tags
-          if (note.tags.isNotEmpty) ...[
+          if (review.tags.isNotEmpty) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
-                children: note.tags.map((tag) {
+                children: review.tags.map((tag) {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -357,34 +324,99 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                _buildActionButton(
-                  icon: Icons.favorite_border,
-                  label: note.likeCount.toString(),
-                  onTap: () {},
-                  isDark: isDark,
-                ),
+                // Like/Dislike combined (MusicBoard style)
+                _buildLikeDislikeButton(review, isDark),
                 const SizedBox(width: 20),
                 _buildActionButton(
-                  icon: Icons.comment_outlined,
-                  label: note.commentCount.toString(),
-                  onTap: () {},
+                  icon: Icons.mode_comment_outlined,
+                  label: review.replyCount.toString(),
+                  onTap: () {
+                    _showReviewDetail(review, isDark);
+                  },
                   isDark: isDark,
                 ),
                 const SizedBox(width: 20),
                 _buildActionButton(
                   icon: Icons.share_outlined,
                   label: 'Paylaş',
-                  onTap: () {},
+                  onTap: () {
+                    _shareReview(review);
+                  },
                   isDark: isDark,
                 ),
                 const Spacer(),
                 _buildActionButton(
                   icon: Icons.bookmark_border,
                   label: '',
-                  onTap: () {},
+                  onTap: () {
+                    _bookmarkReview(review);
+                  },
                   isDark: isDark,
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLikeDislikeButton(MusicReview review, bool isDark) {
+    // Mock current user ID (in real app, get from auth service)
+    const currentUserId = 'current_user';
+    
+    final isLiked = review.likedBy.contains(currentUserId);
+    final isDisliked = review.dislikedBy.contains(currentUserId);
+    final netScore = review.likeCount - review.dislikeCount;
+    final scoreColor = netScore > 0 
+        ? Colors.green 
+        : netScore < 0 
+            ? Colors.red 
+            : (isDark ? Colors.grey[400] : Colors.grey[600]);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800] : Colors.grey[100],
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          InkWell(
+            onTap: () {
+              // TODO: Implement like toggle
+              setState(() {
+                // Mock implementation
+              });
+            },
+            child: Icon(
+              isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
+              size: 18,
+              color: isLiked ? AppTheme.primaryColor : (isDark ? Colors.grey[400] : Colors.grey[600]),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            netScore.toString(),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: scoreColor,
+            ),
+          ),
+          const SizedBox(width: 8),
+          InkWell(
+            onTap: () {
+              // TODO: Implement dislike toggle
+              setState(() {
+                // Mock implementation
+              });
+            },
+            child: Icon(
+              isDisliked ? Icons.thumb_down : Icons.thumb_down_outlined,
+              size: 18,
+              color: isDisliked ? Colors.red : (isDark ? Colors.grey[400] : Colors.grey[600]),
             ),
           ),
         ],
@@ -427,6 +459,29 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
     );
   }
 
+  void _showReviewDetail(MusicReview review, bool isDark) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReviewDetailPage(review: review),
+      ),
+    );
+  }
+
+  void _shareReview(MusicReview review) {
+    // TODO: Implement share functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${review.username} kullanıcısının review\'ını paylaş')),
+    );
+  }
+
+  void _bookmarkReview(MusicReview review) {
+    // TODO: Implement bookmark functionality
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Review kaydedildi')),
+    );
+  }
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
@@ -444,12 +499,12 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
     }
   }
 
-  void _showCreateNoteDialog(BuildContext context, bool isDark) {
+  void _showCreateReviewDialog(BuildContext context, bool isDark) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Not Yaz'),
-        content: const Text('Not yazma özelliği yakında eklenecek.'),
+        title: const Text('Review Yaz'),
+        content: const Text('Review yazma özelliği yakında eklenecek.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -460,30 +515,32 @@ class _NotesPageState extends ConsumerState<NotesPage> with SingleTickerProvider
     );
   }
 
-  List<MusicNote> _getMockNotes() {
+  List<MusicReview> _getMockReviews() {
     // Mock data
     return List.generate(5, (index) {
-      return MusicNote(
-        id: 'note_$index',
+      return MusicReview(
+        id: 'review_$index',
         userId: 'user_$index',
         username: 'Kullanıcı ${index + 1}',
         trackId: 'track_$index',
         trackName: 'Şarkı Adı ${index + 1}',
         artists: 'Sanatçı Adı',
         rating: (index % 5) + 1,
-        noteText: index == 0
+        reviewText: index == 0
             ? 'Bu şarkı gerçekten harika! Özellikle melodisi ve sözleri çok etkileyici. Her dinlediğimde farklı bir his katıyor bana. Kesinlikle herkesin dinlemesi gereken bir parça.'
             : index == 1
             ? 'İlk defa dinlediğimde pek anlamadım ama zamanla gelişti. Şimdi favorilerimden biri. Ritim ve enstrümantasyon mükemmel.'
             : 'Harika bir parça! ${index + 1}/5 ⭐',
-        containsSpoiler: index == 2,
         tags: index == 0
             ? ['favorilerim', 'duygusal', 'dinlenmeli']
             : index == 1
             ? ['yaz', 'enerjik']
             : [],
         likeCount: (index + 1) * 12,
-        commentCount: (index + 1) * 3,
+        dislikeCount: index * 2,
+        likedBy: index == 0 ? ['current_user', 'user_1'] : ['user_1'],
+        dislikedBy: index == 1 ? ['current_user'] : [],
+        replyCount: (index + 1) * 3,
         createdAt: DateTime.now().subtract(Duration(hours: index * 2)),
         updatedAt: DateTime.now().subtract(Duration(hours: index * 2)),
       );

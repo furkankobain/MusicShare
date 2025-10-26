@@ -36,19 +36,6 @@ class AggregatedRating {
     );
   }
 
-  factory AggregatedRating.fromJson(Map<String, dynamic> json) {
-    return AggregatedRating(
-      overall: json['overall'] as double,
-      spotifyScore: json['spotifyScore'] as double?,
-      lastFmScore: json['lastFmScore'] as double?,
-      appScore: json['appScore'] as double?,
-      sources: List<String>.from(json['sources'] as List),
-      lastFmPlaycount: json['lastFmPlaycount'] as int?,
-      lastFmListeners: json['lastFmListeners'] as int?,
-      appRatingCount: json['appRatingCount'] as int?,
-    );
-  }
-
   String get displayRating => overall.toStringAsFixed(1);
   
   String get ratingBreakdown {
@@ -248,12 +235,20 @@ class RatingAggregationService {
     }
 
     // Fetch fresh data
-    final rating = await getTrackRating(
+    final rating = await getAggregatedRating(
       trackId: trackId,
       trackName: trackName,
       artistName: artistName,
       spotifyPopularity: spotifyPopularity,
     );
+
+    if (rating == null) {
+      // Return default rating if fetch failed
+      return AggregatedRating(
+        overall: 0.0,
+        sources: [],
+      );
+    }
 
     // Update cache
     try {

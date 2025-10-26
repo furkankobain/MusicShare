@@ -5,7 +5,9 @@ import '../../shared/services/playlist_service.dart';
 import '../../core/theme/app_theme.dart';
 
 class UserPlaylistsPage extends StatefulWidget {
-  const UserPlaylistsPage({super.key});
+  final bool showBackButton;
+  
+  const UserPlaylistsPage({super.key, this.showBackButton = false});
 
   @override
   State<UserPlaylistsPage> createState() => _UserPlaylistsPageState();
@@ -31,10 +33,12 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
+                onPressed: () => context.pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: Icon(Icons.add, color: isDark ? Colors.white : Colors.black87),
@@ -323,7 +327,7 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
                   style:
                       TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
-                Navigator.pop(context);
+                context.pop();
                 context.push('/create-playlist');
               },
             ),
@@ -334,7 +338,7 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
                   style:
                       TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
-                Navigator.pop(context);
+                context.pop();
                 context.push('/import-spotify-playlists');
               },
             ),

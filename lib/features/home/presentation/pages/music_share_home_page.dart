@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../notes/presentation/pages/notes_page.dart';
+import '../../../reviews/presentation/pages/reviews_page.dart';
 import '../../../albums/presentation/pages/albums_page.dart';
 import '../../../discover/presentation/pages/enhanced_discover_page.dart';
 import '../../../../shared/widgets/spotify/spotify_connect_button.dart';
@@ -29,7 +29,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   bool _isLoadingAlbums = true;
   bool _isLoadingRecent = true;
 
-  final List<String> _tabs = ['Şarkılar', 'Notes', 'Albümler', 'Aktivite'];
+  final List<String> _tabs = ['Şarkılar', 'Reviews', 'Albümler', 'Aktivite'];
 
   @override
   void initState() {
@@ -183,7 +183,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
           controller: _tabController,
           children: [
             _buildSongsTab(isDark),
-            const NotesPage(),
+            const ReviewsPage(),
             const AlbumsPage(),
             const EnhancedDiscoverPage(),
           ],

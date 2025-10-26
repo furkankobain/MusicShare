@@ -128,6 +128,7 @@ class PopularTracksSeedService {
       print('Playlist çekme devre dışı: $playlistId');
       return [];
       
+      /* Disabled for now
       // final response = await EnhancedSpotifyService().spotifyApi.playlists
       //     .getTracksByPlaylistId(playlistId)
       //     .getPage(50, 0);
@@ -157,6 +158,7 @@ class PopularTracksSeedService {
       }
 
       return tracks;
+      */
     } catch (e) {
       print('Playlist tracks çekme hatası ($playlistId): $e');
       return [];
