@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/services/firebase_review_service.dart';
+import '../../../../shared/widgets/rating/rating_widget.dart';
+import '../../../../shared/widgets/rating/review_card.dart';
+import '../../../../shared/widgets/rating/add_review_sheet.dart';
+import '../../../album/data/models/review_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AlbumDetailPage extends StatefulWidget {
@@ -21,20 +27,23 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
   bool _isLoading = true;
   Map<String, dynamic>? _albumDetails;
   List<Map<String, dynamic>> _tracks = [];
-  double _userRating = 0.0;
   bool _isFavorite = false;
-  final TextEditingController _reviewController = TextEditingController();
+  
+  // Review & Rating
+  List<Review> _reviews = [];
+  Review? _userReview;
+  double _averageRating = 0.0;
+  int _totalRatings = 0;
+  Map<int, int> _ratingDistribution = {};
+  bool _loadingReviews = false;
+  
+  final _reviewService = FirebaseReviewService();
 
   @override
   void initState() {
     super.initState();
     _loadAlbumDetails();
-  }
-
-  @override
-  void dispose() {
-    _reviewController.dispose();
-    super.dispose();
+    _loadReviews();
   }
 
   Future<void> _loadAlbumDetails() async {
@@ -59,6 +68,128 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    setState(() => _loadingReviews = true);
+
+    try {
+      final albumId = widget.album['id'] as String;
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      // Load reviews
+      final reviews = await _reviewService.getAlbumReviews(albumId);
+      
+      // Load user's review if logged in
+      Review? userReview;
+      if (currentUser != null) {
+        userReview = await _reviewService.getUserReviewForAlbum(
+          currentUser.uid,
+          albumId,
+        );
+      }
+
+      // Load statistics
+      final stats = await _reviewService.getAlbumRatingStats(albumId);
+
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _userReview = userReview;
+          _averageRating = stats['averageRating'] ?? 0.0;
+          _totalRatings = stats['totalRatings'] ?? 0;
+          _ratingDistribution = stats['distribution'] ?? {};
+          _loadingReviews = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading reviews: $e');
+      if (mounted) {
+        setState(() => _loadingReviews = false);
+      }
+    }
+  }
+
+  Future<void> _handleAddReview(double rating, String reviewText) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('İnceleme yapmak için giriş yapmalısınız'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    final albumId = widget.album['id'] as String;
+    final albumName = widget.album['name'] ?? 'Unknown Album';
+
+    if (_userReview != null) {
+      // Update existing review
+      await _reviewService.updateReview(
+        _userReview!.id,
+        rating: rating,
+        reviewText: reviewText,
+      );
+    } else {
+      // Create new review
+      await _reviewService.createReview(
+        userId: currentUser.uid,
+        userName: currentUser.displayName ?? 'Anonymous',
+        userPhotoUrl: currentUser.photoURL,
+        albumId: albumId,
+        albumName: albumName,
+        rating: rating,
+        reviewText: reviewText,
+      );
+    }
+
+    await _loadReviews();
+  }
+
+  Future<void> _handleLikeReview(Review review) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    await _reviewService.likeReview(review.id, currentUser.uid);
+    await _loadReviews();
+  }
+
+  Future<void> _handleDislikeReview(Review review) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    await _reviewService.dislikeReview(review.id, currentUser.uid);
+    await _loadReviews();
+  }
+
+  Future<void> _handleDeleteReview(Review review) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('İncelemeyi Sil'),
+        content: const Text('Bu incelemeyi silmek istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Sil'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _reviewService.deleteReview(review.id);
+      await _loadReviews();
     }
   }
 
@@ -370,7 +501,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               ),
             ),
 
-          // Rating Section
+          // Rating & Review Section
           SliverToBoxAdapter(
             child: Container(
               margin: const EdgeInsets.all(20),
@@ -388,100 +519,147 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               ),
               child: Column(
                 children: [
-                  Text(
-                    'Bu albümü değerlendir',
-                    style: TextStyle(
-                      fontSize: ModernDesignSystem.fontSizeL,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(5, (index) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _userRating = (index + 1).toDouble();
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Icon(
-                            index < _userRating
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: ModernDesignSystem.accentYellow,
-                            size: 40,
-                          ),
+                  // Average Rating Display
+                  if (_totalRatings > 0) ..[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Column(
+                          children: [
+                            Text(
+                              _averageRating.toStringAsFixed(1),
+                              style: TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black,
+                              ),
+                            ),
+                            RatingDisplay(
+                              rating: _averageRating,
+                              ratingCount: _totalRatings,
+                              size: 20,
+                            ),
+                          ],
                         ),
-                      );
-                    }),
-                  ),
-                  if (_userRating > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${_userRating.toStringAsFixed(0)}/5',
-                      style: TextStyle(
-                        fontSize: ModernDesignSystem.fontSizeL,
-                        fontWeight: FontWeight.bold,
-                        color: ModernDesignSystem.accentYellow,
-                      ),
+                        if (_ratingDistribution.isNotEmpty) ..[
+                          const SizedBox(width: 32),
+                          Expanded(
+                            child: RatingDistribution(
+                              distribution: _ratingDistribution,
+                              totalRatings: _totalRatings,
+                              height: 120,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                    const SizedBox(height: 20),
-                    TextField(
-                      controller: _reviewController,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        hintText: 'Yorumunuzu yazın...',
-                        border: OutlineInputBorder(
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Add/Edit Review Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        AddReviewSheet.show(
+                          context: context,
+                          albumName: albumName,
+                          artistName: artistNames,
+                          initialRating: _userReview?.rating,
+                          initialReviewText: _userReview?.reviewText,
+                          onSubmit: _handleAddReview,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ModernDesignSystem.accentPurple,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
                         ),
-                        filled: true,
-                        fillColor: isDark
-                            ? ModernDesignSystem.darkBackground
-                            : Colors.grey.withValues(alpha: 0.1),
+                        elevation: 0,
                       ),
-                      style: TextStyle(
-                        color: isDark ? Colors.white : Colors.black,
+                      icon: Icon(
+                        _userReview != null ? Icons.edit : Icons.rate_review,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Save review
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('İncelemeniz kaydedildi!'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          _reviewController.clear();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ModernDesignSystem.primaryGreen,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
-                          ),
-                        ),
-                        child: const Text(
-                          'İncelemeyi Kaydet',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      label: Text(
+                        _userReview != null
+                            ? 'İncelemeyi Düzenle'
+                            : 'İnceleme Yaz',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
           ),
+
+          // Reviews List
+          if (_reviews.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'İncelemeler',
+                      style: TextStyle(
+                        fontSize: ModernDesignSystem.fontSizeXL,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    Text(
+                      '${_reviews.length}',
+                      style: TextStyle(
+                        fontSize: ModernDesignSystem.fontSizeL,
+                        color: ModernDesignSystem.accentPurple,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final review = _reviews[index];
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final isCurrentUser = currentUser?.uid == review.userId;
+
+                    return ReviewCard(
+                      review: review,
+                      isCurrentUser: isCurrentUser,
+                      onLike: () => _handleLikeReview(review),
+                      onDislike: () => _handleDislikeReview(review),
+                      onDelete: () => _handleDeleteReview(review),
+                      onEdit: () {
+                        AddReviewSheet.show(
+                          context: context,
+                          albumName: albumName,
+                          artistName: artistNames,
+                          initialRating: review.rating,
+                          initialReviewText: review.reviewText,
+                          onSubmit: _handleAddReview,
+                        );
+                      },
+                    );
+                  },
+                  childCount: _reviews.length,
+                ),
+              ),
+            ),
+          ],
 
           // Track List Header
           SliverToBoxAdapter(
