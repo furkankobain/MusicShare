@@ -2,18 +2,84 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/widgets/enhanced_spotify_player_widget.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/services/favorites_service.dart';
+import '../../../../shared/widgets/cards/album_card.dart';
+import '../../../../shared/widgets/loading/loading_skeletons.dart';
 
-class HomePage extends ConsumerWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends ConsumerState<HomePage> {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _newReleases = [];
+  List<Map<String, dynamic>> _featuredPlaylists = [];
+  Map<String, int> _favoriteCounts = {};
+  final _scrollController = ScrollController();
+  double _scrollOffset = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    setState(() {
+      _scrollOffset = _scrollController.offset;
+    });
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Load Spotify data
+      final releases = await EnhancedSpotifyService.getNewReleases(limit: 6);
+      final playlists = await EnhancedSpotifyService.getFeaturedPlaylists(limit: 4);
+
+      // Load favorites count
+      final currentUser = FirebaseAuth.instance.currentUser;
+      Map<String, int> counts = {};
+      if (currentUser != null) {
+        counts = await FavoritesService.getFavoritesCount();
+      }
+
+      if (mounted) {
+        setState(() {
+          _newReleases = releases;
+          _featuredPlaylists = playlists;
+          _favoriteCounts = counts;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading home data: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
@@ -103,41 +169,53 @@ class HomePage extends ConsumerWidget {
                   end: Alignment.bottomCenter,
                 ),
         ),
-        child: SingleChildScrollView(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + kToolbarHeight + 16,
-            left: AppConstants.defaultPadding,
-            right: AppConstants.defaultPadding,
-            bottom: AppConstants.defaultPadding,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Welcome Section
-              _buildModernWelcomeSection(context, isDark),
-              
-              const SizedBox(height: 24),
-              
-              // Spotify Player Widget (only if connected)
-              if (EnhancedSpotifyService.isConnected)
-                const EnhancedSpotifyPlayerWidget(),
-              
-              if (EnhancedSpotifyService.isConnected)
+        child: RefreshIndicator(
+          onRefresh: _loadData,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 16,
+              left: AppConstants.defaultPadding,
+              right: AppConstants.defaultPadding,
+              bottom: AppConstants.defaultPadding + 80,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section with parallax
+                Transform.translate(
+                  offset: Offset(0, -_scrollOffset * 0.2),
+                  child: _buildModernWelcomeSection(context, isDark),
+                ),
+                
                 const SizedBox(height: 24),
-              
-              // Quick Stats
-              _buildModernQuickStats(context, isDark),
-              
-              const SizedBox(height: 24),
-              
-              // Recent Activity
-              _buildModernRecentActivity(context, isDark),
-              
-              const SizedBox(height: 24),
-              
-              // Top Tracks This Week
-              _buildModernTopTracks(context, isDark),
-            ],
+                
+                // Spotify Player Widget (only if connected)
+                if (EnhancedSpotifyService.isConnected)
+                  const EnhancedSpotifyPlayerWidget(),
+                
+                if (EnhancedSpotifyService.isConnected)
+                  const SizedBox(height: 24),
+                
+                // Quick Stats
+                _buildModernQuickStats(context, isDark),
+                
+                const SizedBox(height: 24),
+                
+                // New Releases
+                _buildNewReleases(context, isDark),
+                
+                const SizedBox(height: 24),
+                
+                // Featured Playlists
+                _buildFeaturedPlaylists(context, isDark),
+                
+                const SizedBox(height: 24),
+                
+                // Recent Activity
+                _buildModernRecentActivity(context, isDark),
+              ],
+            ),
           ),
         ),
       ),
@@ -205,6 +283,10 @@ class HomePage extends ConsumerWidget {
   }
 
   Widget _buildModernQuickStats(BuildContext context, bool isDark) {
+    final totalFavorites = _favoriteCounts['total'] ?? 0;
+    final tracks = _favoriteCounts['tracks'] ?? 0;
+    final albums = _favoriteCounts['albums'] ?? 0;
+
     return Row(
       children: [
         Expanded(
@@ -213,8 +295,9 @@ class HomePage extends ConsumerWidget {
             isDark: isDark,
             icon: Icons.music_note_rounded,
             title: 'Şarkılar',
-            value: '247',
+            value: tracks.toString(),
             gradient: ModernDesignSystem.primaryGradient,
+            onTap: () => context.push('/favorites'),
           ),
         ),
         const SizedBox(width: 12),
@@ -224,19 +307,190 @@ class HomePage extends ConsumerWidget {
             isDark: isDark,
             icon: Icons.album_rounded,
             title: 'Albümler',
-            value: '43',
+            value: albums.toString(),
             gradient: ModernDesignSystem.blueGradient,
+            onTap: () => context.push('/favorites'),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
+        const Size        ),
+      ],
+      ),
+    );
+  }
+
+  Widget _buildNewReleases(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: ModernDesignSystem.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.new_releases_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Yeni Çıkanlar',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => context.push('/discover'),
+                style: TextButton.styleFrom(
+                  foregroundColor: ModernDesignSystem.primaryGreen,
+                ),
+                child: const Text('Tümü'),
+              ),
+            ],
+          ),
+        ),
+        if (_isLoading)
+          const HorizontalScrollSkeleton(height: 220, itemCount: 3)
+        else if (_newReleases.isEmpty)
+          Container(
+            height: 200,
+            alignment: Alignment.center,
+            child: Text(
+              'Yeni çıkan albüm bulunamadı',
+              style: TextStyle(
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _newReleases.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  width: 160,
+                  margin: EdgeInsets.only(
+                    right: index < _newReleases.length - 1 ? 12 : 0,
+                  ),
+                  child: HorizontalAlbumCard(album: _newReleases[index]),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFeaturedPlaylists(BuildContext context, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: ModernDesignSystem.blueGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.featured_play_list_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Öne Çıkan Playlistler',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              TextButton(
+                onPressed: () => context.push('/playlists'),
+                style: TextButton.styleFrom(
+                  foregroundColor: ModernDesignSystem.primaryGreen,
+                ),
+                child: const Text('Tümü'),
+              ),
+            ],
+          ),
+        ),
+        if (_isLoading)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.7,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: 4,
+            itemBuilder: (context, index) => const AlbumCardSkeleton(),
+          )
+        else if (_featuredPlaylists.isEmpty)
+          Container(
+            height: 200,
+            alignment: Alignment.center,
+            child: Text(
+              'Öne çıkan playlist bulunamadı',
+              style: TextStyle(
+                color: isDark ? Colors.grey[500] : Colors.grey[600],
+              ),
+            ),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.7,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: _featuredPlaylists.length > 4 ? 4 : _featuredPlaylists.length,
+            itemBuilder: (context, index) {
+              return AlbumCard(album: _featuredPlaylists[index]);
+            },
+          ),
+      ],
+    );
+  }
+ed(
           child: _buildModernStatCard(
             context,
             isDark: isDark,
             icon: Icons.favorite_rounded,
             title: 'Favoriler',
-            value: '89',
+            value: totalFavorites.toString(),
             gradient: ModernDesignSystem.sunsetGradient,
+            onTap: () => context.push('/favorites'),
           ),
         ),
       ],
@@ -249,17 +503,20 @@ class HomePage extends ConsumerWidget {
     required String title,
     required String value,
     required Gradient gradient,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: isDark 
-          ? ModernDesignSystem.darkGlassmorphism
-          : BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
-              boxShadow: ModernDesignSystem.mediumShadow,
-            ),
-      child: Column(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: isDark 
+            ? ModernDesignSystem.darkGlassmorphism
+            : BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
+                boxShadow: ModernDesignSystem.mediumShadow,
+              ),
+        child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
