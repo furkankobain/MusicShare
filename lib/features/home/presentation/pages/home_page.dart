@@ -312,9 +312,19 @@ class _HomePageState extends ConsumerState<HomePage> {
             onTap: () => context.push('/favorites'),
           ),
         ),
-        const Size        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildModernStatCard(
+            context,
+            isDark: isDark,
+            icon: Icons.favorite_rounded,
+            title: 'Favoriler',
+            value: totalFavorites.toString(),
+            gradient: ModernDesignSystem.sunsetGradient,
+            onTap: () => context.push('/favorites'),
+          ),
+        ),
       ],
-      ),
     );
   }
 
@@ -482,20 +492,6 @@ class _HomePageState extends ConsumerState<HomePage> {
       ],
     );
   }
-ed(
-          child: _buildModernStatCard(
-            context,
-            isDark: isDark,
-            icon: Icons.favorite_rounded,
-            title: 'Favoriler',
-            value: totalFavorites.toString(),
-            gradient: ModernDesignSystem.sunsetGradient,
-            onTap: () => context.push('/favorites'),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildModernStatCard(BuildContext context, {
     required bool isDark,
@@ -561,6 +557,7 @@ ed(
             overflow: TextOverflow.ellipsis,
           ),
         ],
+        ),
       ),
     );
   }
