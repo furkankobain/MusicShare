@@ -196,7 +196,11 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final otherUserAvatar = conversation.getOtherParticipantAvatar(currentUserId);
     final unreadCount = conversation.getUnreadCountForUser(currentUserId);
     final isTyping = conversation.isOtherUserTyping(currentUserId);
-    final isPinned =       onTap: () {
+    final isPinned = conversation.pinnedBy?.contains(currentUserId) ?? false;
+    final isMuted = conversation.mutedBy?.contains(currentUserId) ?? false;
+
+    return InkWell(
+      onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(

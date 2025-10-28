@@ -10,6 +10,9 @@ class Conversation {
   final DateTime? lastMessageTime;
   final Map<String, int> unreadCount; // userId -> count
   final Map<String, bool> typingStatus; // userId -> isTyping
+  final List<String>? pinnedBy; // userIds who pinned this conversation
+  final List<String>? mutedBy; // userIds who muted this conversation
+  final Map<String, dynamic>? mutedUntil; // userId -> timestamp
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -23,6 +26,9 @@ class Conversation {
     this.lastMessageTime,
     required this.unreadCount,
     this.typingStatus = const {},
+    this.pinnedBy,
+    this.mutedBy,
+    this.mutedUntil,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -37,6 +43,9 @@ class Conversation {
       'lastMessageTime': lastMessageTime != null ? Timestamp.fromDate(lastMessageTime!) : null,
       'unreadCount': unreadCount,
       'typingStatus': typingStatus,
+      'pinnedBy': pinnedBy,
+      'mutedBy': mutedBy,
+      'mutedUntil': mutedUntil,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
@@ -54,6 +63,9 @@ class Conversation {
       lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate(),
       unreadCount: Map<String, int>.from(data['unreadCount'] ?? {}),
       typingStatus: Map<String, bool>.from(data['typingStatus'] ?? {}),
+      pinnedBy: data['pinnedBy'] != null ? List<String>.from(data['pinnedBy']) : null,
+      mutedBy: data['mutedBy'] != null ? List<String>.from(data['mutedBy']) : null,
+      mutedUntil: data['mutedUntil'] != null ? Map<String, dynamic>.from(data['mutedUntil']) : null,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );

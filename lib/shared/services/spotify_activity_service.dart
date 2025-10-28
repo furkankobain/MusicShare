@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:spotify_sdk/spotify_sdk.dart';
+import 'package:async/async.dart';
+// import 'package:spotify_sdk/spotify_sdk.dart'; // Disabled for now
 import '../models/spotify_activity.dart';
 import 'firebase_bypass_auth_service.dart';
 import 'dart:async';
@@ -41,7 +42,9 @@ class SpotifyActivityService {
       if (userId == null) return;
       
       // Get currently playing track from Spotify SDK
-      final playerState = await SpotifySdk.getPlayerState();
+      // final playerState = await SpotifySdk.getPlayerState();
+      // TODO: Implement real Spotify SDK integration
+      final playerState = null; // Mock
       
       if (playerState != null && playerState.track != null) {
         final track = playerState.track!;
@@ -182,11 +185,13 @@ class SpotifyActivityService {
     });
     
     // Combine all streams into one
-    return StreamGroup.merge(streams).map((activities) {
-      return activities;
-    }).asyncMap((allActivities) async {
-      // Flatten and sort by timestamp
-      final combined = allActivities.expand((list) => list).toList();
+    if (streams.isEmpty) {
+      return Stream.value([]);
+    }
+    
+    return StreamGroup.merge(streams).asyncMap((allActivities) async {
+      // allActivities is already a List<SpotifyActivity> from the batch
+      final combined = List<SpotifyActivity>.from(allActivities);
       combined.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       return combined;
     });
