@@ -521,14 +521,280 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  String _getOtherUserId() {
+    return widget.conversation.participantIds
+        .firstWhere((id) => id != _currentUserId);
+  }
+
+  int _calculateStreak() {
+    // TODO: Calculate actual streak from message history
+    // For now, return mock value
+    return 7; // Mock: 7 day streak
+  }
+
+  void _showChatOptions(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final otherUserId = _getOtherUserId();
+    final streak = _calculateStreak();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Profili Görüntüle'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // TODO: Navigate to user profile
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Profil sayfası yakında...')),
+                    );
+                  },
+                ),
+                
+                ListTile(
+                  leading: const Icon(Icons.volume_off),
+                  title: const Text('Sustur'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showMuteOptions(context);
+                  },
+                ),
+                
+                ListTile(
+                  leading: const Icon(Icons.local_fire_department, color: Colors.orange),
+                  title: Text('Seri: $streak gün 🔥'),
+                  subtitle: const Text('Arka arkaya mesajlaşma günü'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showStreakInfo(context, streak);
+                  },
+                ),
+                
+                const Divider(height: 1),
+                
+                ListTile(
+                  leading: const Icon(Icons.block, color: Colors.red),
+                  title: const Text('Engelle & Bildir', style: TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showBlockDialog(context, otherUserId);
+                  },
+                ),
+                
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMuteOptions(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Ne kadar süreyle susturulsun?',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                
+                ListTile(
+                  title: const Text('8 Saat'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      widget.conversation.id,
+                      const Duration(hours: 8),
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('8 saat süreyle susturuldu')),
+                      );
+                    }
+                  },
+                ),
+                
+                ListTile(
+                  title: const Text('1 Hafta'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      widget.conversation.id,
+                      const Duration(days: 7),
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('1 hafta süreyle susturuldu')),
+                      );
+                    }
+                  },
+                ),
+                
+                ListTile(
+                  title: const Text('Her Zaman'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      widget.conversation.id,
+                      null,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Kalıcı olarak susturuldu')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showStreakInfo(BuildContext context, int streak) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.local_fire_department, color: Colors.orange, size: 28),
+            SizedBox(width: 8),
+            Text('Mesajlaşma Serisi'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$streak',
+              style: const TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange,
+              ),
+            ),
+            const Text(
+              'GÜN',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '${_getOtherUserName()} ile $streak gündür arka arkaya mesajlaşıyorsunuz!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Her gün en az bir mesaj göndererek serinizi devam ettirin!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBlockDialog(BuildContext context, String userId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Engelle & Bildir'),
+        content: Text(
+          '${_getOtherUserName()} kullanıcısını engellemek ve bildirmek istiyor musunuz?\n\n'
+          'Bu kullanıcı size artık mesaj gönderemeyecek.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement block & report
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Kullanıcı engellendi')),
+              );
+            },
+            child: const Text(
+              'Engelle',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final streak = _calculateStreak();
+    
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(_getOtherUserName()),
+        title: InkWell(
+          onTap: () => _showChatOptions(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(_getOtherUserName()),
             if (_isOtherUserTyping)
               Text(
                 'yazıyor...',
@@ -567,14 +833,48 @@ class _ChatPageState extends State<ChatPage> {
                   color: Colors.grey.shade500,
                 ),
               ),
-          ],
+            ],
+          ),
         ),
         actions: [
+          // Streak indicator
+          if (streak > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.orange, Colors.deepOrange],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$streak',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // TODO: Show chat options menu
-            },
+            onPressed: () => _showChatOptions(context),
           ),
         ],
       ),
