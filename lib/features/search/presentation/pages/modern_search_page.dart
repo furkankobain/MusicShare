@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/modern_design_system.dart';
@@ -18,10 +20,13 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late TextEditingController _searchController;
+  Timer? _debounce;
   
   List<Map<String, dynamic>> _trackResults = [];
   List<Map<String, dynamic>> _artistResults = [];
+  List<Map<String, dynamic>> _albumResults = [];
   List<Map<String, dynamic>> _userResults = [];
+  List<String> _recentSearches = [];
   
   bool _isSearching = false;
   String _currentQuery = '';
@@ -29,7 +34,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _searchController = TextEditingController();
     _loadRecentSearches();
   }
@@ -38,11 +43,55 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _debounce?.cancel();
     super.dispose();
   }
 
   Future<void> _loadRecentSearches() async {
-    // TODO: Load from SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final searches = prefs.getStringList('recent_searches') ?? [];
+      if (mounted) {
+        setState(() => _recentSearches = searches);
+      }
+    } catch (e) {
+      print('Error loading recent searches: $e');
+    }
+  }
+
+  Future<void> _saveSearch(String query) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final searches = prefs.getStringList('recent_searches') ?? [];
+      
+      // Remove if already exists
+      searches.remove(query);
+      // Add to beginning
+      searches.insert(0, query);
+      // Keep only last 10
+      if (searches.length > 10) {
+        searches.removeRange(10, searches.length);
+      }
+      
+      await prefs.setStringList('recent_searches', searches);
+      if (mounted) {
+        setState(() => _recentSearches = searches);
+      }
+    } catch (e) {
+      print('Error saving search: $e');
+    }
+  }
+
+  Future<void> _clearSearchHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('recent_searches');
+      if (mounted) {
+        setState(() => _recentSearches = []);
+      }
+    } catch (e) {
+      print('Error clearing search history: $e');
+    }
   }
 
   Future<void> _performSearch(String query) async {
@@ -53,26 +102,34 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
       _currentQuery = query;
     });
 
+    // Save to search history
+    await _saveSearch(query);
+
     try {
-      // Search tracks
-      final trackResponse = await EnhancedSpotifyService.searchTracks(
-        query,
-        limit: 20,
-      );
-      
-      // Search artists
-      final artistResponse = await EnhancedSpotifyService.searchArtists(
-        query,
-        limit: 20,
-      );
+      // Search all types in parallel
+      final results = await Future.wait([
+        EnhancedSpotifyService.searchTracks(query, limit: 20),
+        EnhancedSpotifyService.searchArtists(query, limit: 20),
+        EnhancedSpotifyService.search(query: query, types: ['album'], limit: 20),
+      ]);
 
       // Search users from Firebase Bypass Auth
       final userResults = _searchUsers(query);
 
       if (mounted) {
         setState(() {
-          _trackResults = trackResponse;
-          _artistResults = artistResponse;
+          _trackResults = results[0] as List<Map<String, dynamic>>;
+          _artistResults = results[1] as List<Map<String, dynamic>>;
+          
+          // Extract albums from search response
+          final albumResponse = results[2] as Map<String, dynamic>;
+          if (albumResponse['albums']?['items'] != null) {
+            _albumResults = (albumResponse['albums']['items'] as List)
+                .cast<Map<String, dynamic>>();
+          } else {
+            _albumResults = [];
+          }
+          
           _userResults = userResults;
           _isSearching = false;
         });
@@ -123,6 +180,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
                 tabs: const [
                   Tab(text: 'Şarkılar'),
                   Tab(text: 'Sanatçılar'),
+                  Tab(text: 'Albümler'),
                   Tab(text: 'Kullanıcılar'),
                 ],
               ),
@@ -135,6 +193,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
         children: [
           _buildTracksTab(isDark),
           _buildArtistsTab(isDark),
+          _buildAlbumsTab(isDark),
           _buildUsersTab(isDark),
         ],
       ),
@@ -184,9 +243,14 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
         ),
         onChanged: (value) {
           setState(() {});
-          if (value.length >= 2) {
-            _performSearch(value);
-          }
+          
+          // Debounce search
+          if (_debounce?.isActive ?? false) _debounce!.cancel();
+          _debounce = Timer(const Duration(milliseconds: 500), () {
+            if (value.length >= 2) {
+              _performSearch(value);
+            }
+          });
         },
         onSubmitted: _performSearch,
       ),
@@ -195,12 +259,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
 
   Widget _buildTracksTab(bool isDark) {
     if (_currentQuery.isEmpty) {
-      return _buildEmptyState(
-        Icons.music_note_rounded,
-        'Şarkı Ara',
-        'Şarkı aramak için yukarıdaki arama kutusunu kullanın',
-        isDark,
-      );
+      return _buildRecentSearches(isDark);
     }
 
     if (_isSearching) {
@@ -232,12 +291,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
 
   Widget _buildArtistsTab(bool isDark) {
     if (_currentQuery.isEmpty) {
-      return _buildEmptyState(
-        Icons.person_rounded,
-        'Sanatçı Ara',
-        'Sanatçı aramak için yukarıdaki arama kutusunu kullanın',
-        isDark,
-      );
+      return _buildRecentSearches(isDark);
     }
 
     if (_isSearching) {
@@ -267,14 +321,47 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     );
   }
 
-  Widget _buildUsersTab(bool isDark) {
+  Widget _buildAlbumsTab(bool isDark) {
     if (_currentQuery.isEmpty) {
+      return _buildRecentSearches(isDark);
+    }
+
+    if (_isSearching) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    if (_albumResults.isEmpty) {
       return _buildEmptyState(
-        Icons.people_rounded,
-        'Kullanıcı Ara',
-        'Kullanıcı aramak için yukarıdaki arama kutusunu kullanın',
+        Icons.search_off,
+        'Sonuç Bulunamadı',
+        '"$_currentQuery" için albüm bulunamadı',
         isDark,
       );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: _albumResults.length,
+      itemBuilder: (context, index) {
+        final album = _albumResults[index];
+        return _buildAlbumGridCard(album, isDark);
+      },
+    );
+  }
+
+  Widget _buildUsersTab(bool isDark) {
+    if (_currentQuery.isEmpty) {
+      return _buildRecentSearches(isDark);
     }
 
     if (_isSearching) {
@@ -595,6 +682,159 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAlbumGridCard(Map<String, dynamic> album, bool isDark) {
+    final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+        ? album['images'][0]['url']
+        : null;
+    final artistNames = (album['artists'] as List?)
+        ?.map((a) => a['name'])
+        .join(', ') ?? 'Unknown Artist';
+
+    return GestureDetector(
+      onTap: () => context.push('/album-detail', extra: album),
+      child: Container(
+        decoration: isDark
+            ? ModernDesignSystem.darkGlassmorphism
+            : BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                boxShadow: ModernDesignSystem.subtleShadow,
+              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Album cover
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.grey[800] : Colors.grey[200],
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(ModernDesignSystem.radiusM),
+                    topRight: Radius.circular(ModernDesignSystem.radiusM),
+                  ),
+                  image: imageUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(imageUrl),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: imageUrl == null
+                    ? Center(
+                        child: Icon(
+                          Icons.album,
+                          color: isDark ? Colors.grey[600] : Colors.grey[400],
+                          size: 48,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            // Album info
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album['name'] ?? 'Unknown Album',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    artistNames,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentSearches(bool isDark) {
+    if (_recentSearches.isEmpty) {
+      return _buildEmptyState(
+        Icons.search_rounded,
+        'Arama Yap',
+        'Şarkı, sanatçı, albüm veya kullanıcı ara',
+        isDark,
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Son Aramalar',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            TextButton(
+              onPressed: _clearSearchHistory,
+              child: Text(
+                'Temizle',
+                style: TextStyle(
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ..._recentSearches.map((search) => ListTile(
+              leading: Icon(
+                Icons.history,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+              title: Text(
+                search,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              onTap: () {
+                _searchController.text = search;
+                _performSearch(search);
+              },
+              trailing: IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  size: 20,
+                ),
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final searches = prefs.getStringList('recent_searches') ?? [];
+                  searches.remove(search);
+                  await prefs.setStringList('recent_searches', searches);
+                  setState(() => _recentSearches = searches);
+                },
+              ),
+            )),
+      ],
     );
   }
 
