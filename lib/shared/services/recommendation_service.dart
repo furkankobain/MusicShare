@@ -276,9 +276,83 @@ class RecommendationService {
     String trackId, {
     required int limit,
   }) async {
-    // TODO: Implement actual audio features similarity
-    // For now, use Last.fm similar tracks
-    return _getLastfmSimilarTracks(trackId, limit: limit);
+    try {
+      // Get audio features of the track
+      final trackDoc = await _firestore
+          .collection('audio_features')
+          .doc(trackId)
+          .get();
+
+      if (!trackDoc.exists) {
+        return _getLastfmSimilarTracks(trackId, limit: limit);
+      }
+
+      final features = trackDoc.data()!;
+      final danceability = features['danceability'] ?? 0.5;
+      final energy = features['energy'] ?? 0.5;
+      final valence = features['valence'] ?? 0.5;
+      final tempo = features['tempo'] ?? 120.0;
+
+      // Find tracks with similar audio features
+      final allTracksSnapshot = await _firestore
+          .collection('audio_features')
+          .limit(100)
+          .get();
+
+      final similarTracks = <Map<String, dynamic>>[];
+
+      for (final doc in allTracksSnapshot.docs) {
+        if (doc.id == trackId) continue;
+
+        final otherFeatures = doc.data();
+        final similarity = _calculateAudioSimilarity(
+          danceability: danceability,
+          energy: energy,
+          valence: valence,
+          tempo: tempo,
+          otherDanceability: otherFeatures['danceability'] ?? 0.5,
+          otherEnergy: otherFeatures['energy'] ?? 0.5,
+          otherValence: otherFeatures['valence'] ?? 0.5,
+          otherTempo: otherFeatures['tempo'] ?? 120.0,
+        );
+
+        similarTracks.add({
+          ...otherFeatures,
+          'id': doc.id,
+          'similarity': similarity,
+        });
+      }
+
+      // Sort by similarity
+      similarTracks.sort((a, b) => 
+        (b['similarity'] as double).compareTo(a['similarity'] as double));
+
+      return similarTracks.take(limit).toList();
+    } catch (e) {
+      print('Error getting similar tracks by features: $e');
+      return _getLastfmSimilarTracks(trackId, limit: limit);
+    }
+  }
+
+  /// Calculate audio feature similarity between two tracks
+  static double _calculateAudioSimilarity({
+    required double danceability,
+    required double energy,
+    required double valence,
+    required double tempo,
+    required double otherDanceability,
+    required double otherEnergy,
+    required double otherValence,
+    required double otherTempo,
+  }) {
+    // Euclidean distance with weighted features
+    final danceabilityDiff = (danceability - otherDanceability).abs() * 1.2;
+    final energyDiff = (energy - otherEnergy).abs() * 1.0;
+    final valenceDiff = (valence - otherValence).abs() * 1.3;
+    final tempoDiff = ((tempo - otherTempo).abs() / 200.0) * 0.8;
+
+    final distance = (danceabilityDiff + energyDiff + valenceDiff + tempoDiff) / 4;
+    return 1.0 - distance; // Convert distance to similarity
   }
 
   /// Get Last.fm similar tracks
@@ -430,8 +504,51 @@ class RecommendationService {
     String genre, {
     int limit = 20,
   }) async {
-    // TODO: Implement genre-based recommendations
-    return _getMockRecommendations(limit);
+    try {
+      final userId = FirebaseBypassAuthService.currentUserId;
+      if (userId == null) return _getMockRecommendations(limit);
+
+      // Get popular tracks in this genre
+      final genreTracksSnapshot = await _firestore
+          .collection('tracks')
+          .where('genres', arrayContains: genre)
+          .limit(50)
+          .get();
+
+      if (genreTracksSnapshot.docs.isEmpty) {
+        return _getMockRecommendations(limit);
+      }
+
+      // Get track popularity data
+      final tracks = <Map<String, dynamic>>[];
+      for (final doc in genreTracksSnapshot.docs) {
+        final trackData = doc.data();
+        
+        // Get play count
+        final playsSnapshot = await _firestore
+            .collection('listening_history')
+            .where('trackId', isEqualTo: doc.id)
+            .limit(1)
+            .get();
+
+        tracks.add({
+          ...trackData,
+          'id': doc.id,
+          'popularity': playsSnapshot.docs.length,
+          'source': 'Genre',
+          'reason': 'Popular in $genre',
+        });
+      }
+
+      // Sort by popularity
+      tracks.sort((a, b) => 
+        (b['popularity'] as int).compareTo(a['popularity'] as int));
+
+      return tracks.take(limit).toList();
+    } catch (e) {
+      print('Error getting genre recommendations: $e');
+      return _getMockRecommendations(limit);
+    }
   }
 
   /// Get recommendations by mood
@@ -439,7 +556,112 @@ class RecommendationService {
     String mood, {
     int limit = 20,
   }) async {
-    // TODO: Implement mood-based recommendations
-    return _getMockRecommendations(limit);
+    try {
+      final userId = FirebaseBypassAuthService.currentUserId;
+      if (userId == null) return _getMockRecommendations(limit);
+
+      // Map moods to audio feature ranges
+      final moodFeatures = _getMoodAudioFeatures(mood);
+
+      // Find tracks matching the mood
+      final tracksSnapshot = await _firestore
+          .collection('audio_features')
+          .limit(100)
+          .get();
+
+      final moodTracks = <Map<String, dynamic>>[];
+
+      for (final doc in tracksSnapshot.docs) {
+        final features = doc.data();
+        final score = _calculateMoodMatch(features, moodFeatures);
+
+        if (score > 0.6) {
+          moodTracks.add({
+            ...features,
+            'id': doc.id,
+            'moodScore': score,
+            'source': 'Mood',
+            'reason': 'Perfect for $mood mood',
+          });
+        }
+      }
+
+      // Sort by mood match
+      moodTracks.sort((a, b) => 
+        (b['moodScore'] as double).compareTo(a['moodScore'] as double));
+
+      return moodTracks.take(limit).toList();
+    } catch (e) {
+      print('Error getting mood recommendations: $e');
+      return _getMockRecommendations(limit);
+    }
+  }
+
+  /// Get audio feature ranges for a mood
+  static Map<String, Map<String, double>> _getMoodAudioFeatures(String mood) {
+    switch (mood.toLowerCase()) {
+      case 'happy':
+        return {
+          'valence': {'min': 0.6, 'max': 1.0},
+          'energy': {'min': 0.5, 'max': 1.0},
+          'danceability': {'min': 0.5, 'max': 1.0},
+        };
+      case 'sad':
+        return {
+          'valence': {'min': 0.0, 'max': 0.4},
+          'energy': {'min': 0.0, 'max': 0.5},
+        };
+      case 'energetic':
+        return {
+          'energy': {'min': 0.7, 'max': 1.0},
+          'tempo': {'min': 120.0, 'max': 200.0},
+        };
+      case 'calm':
+        return {
+          'energy': {'min': 0.0, 'max': 0.4},
+          'acousticness': {'min': 0.5, 'max': 1.0},
+        };
+      case 'party':
+        return {
+          'danceability': {'min': 0.7, 'max': 1.0},
+          'energy': {'min': 0.6, 'max': 1.0},
+          'valence': {'min': 0.5, 'max': 1.0},
+        };
+      default:
+        return {};
+    }
+  }
+
+  /// Calculate how well a track matches a mood
+  static double _calculateMoodMatch(
+    Map<String, dynamic> features,
+    Map<String, Map<String, double>> moodFeatures,
+  ) {
+    if (moodFeatures.isEmpty) return 0.0;
+
+    double totalScore = 0.0;
+    int featureCount = 0;
+
+    for (final entry in moodFeatures.entries) {
+      final featureName = entry.key;
+      final range = entry.value;
+      final value = features[featureName] as double? ?? 0.5;
+
+      final min = range['min'] ?? 0.0;
+      final max = range['max'] ?? 1.0;
+
+      if (value >= min && value <= max) {
+        // Score based on how centered the value is in the range
+        final center = (min + max) / 2;
+        final distance = (value - center).abs();
+        final rangeSize = (max - min) / 2;
+        final score = 1.0 - (distance / rangeSize);
+        totalScore += score;
+      }
+
+      featureCount++;
+    }
+
+    return featureCount > 0 ? totalScore / featureCount : 0.0;
   }
 }
