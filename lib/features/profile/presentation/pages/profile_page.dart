@@ -8,6 +8,8 @@ import '../../../../shared/services/enhanced_auth_service.dart';
 import '../../../music/presentation/pages/my_ratings_page.dart';
 import '../../../notifications/presentation/pages/notification_settings_page.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
+import '../../widgets/profile_stats_dashboard.dart';
+import '../../widgets/activity_timeline.dart';
 import 'edit_profile_page.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -37,6 +39,45 @@ class ProfilePage extends ConsumerWidget {
             
             // Stats Section
             _buildStatsSection(context),
+            
+            const SizedBox(height: 24),
+            
+            // Enhanced Stats Dashboard
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+              child: StreamBuilder(
+                stream: EnhancedAuthService.authStateChanges,
+                builder: (context, snapshot) {
+                  final user = snapshot.data;
+                  if (user == null) return const SizedBox.shrink();
+                  return ProfileStatsDashboard(
+                    userId: user.uid,
+                    isOwnProfile: true,
+                  );
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Activity Timeline
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
+              child: SizedBox(
+                height: 500,
+                child: StreamBuilder(
+                  stream: EnhancedAuthService.authStateChanges,
+                  builder: (context, snapshot) {
+                    final user = snapshot.data;
+                    if (user == null) return const SizedBox.shrink();
+                    return ActivityTimeline(
+                      userId: user.uid,
+                      limit: 15,
+                    );
+                  },
+                ),
+              ),
+            ),
             
             const SizedBox(height: 24),
             
