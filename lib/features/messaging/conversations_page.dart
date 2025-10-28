@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -195,9 +196,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
     final otherUserAvatar = conversation.getOtherParticipantAvatar(currentUserId);
     final unreadCount = conversation.getUnreadCountForUser(currentUserId);
     final isTyping = conversation.isOtherUserTyping(currentUserId);
-
-    return InkWell(
-      onTap: () {
+    final isPinned =       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -205,9 +204,15 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
         );
       },
+      onLongPress: () {
+        _showConversationOptions(context, conversation, currentUserId, isDark);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
+          color: isPinned
+              ? (isDark ? Colors.grey[850] : Colors.grey[50])
+              : (isDark ? AppTheme.backgroundColor : Colors.white),
           border: Border(
             bottom: BorderSide(
               color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
@@ -268,12 +273,37 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        otherUserName,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (isPinned) ...[
+                              Icon(
+                                Icons.push_pin,
+                                size: 14,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            Flexible(
+                              child: Text(
+                                otherUserName,
+                                style: TextStyle(
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isMuted) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.volume_off,
+                                size: 14,
+                                color: isDark ? Colors.grey[500] : Colors.grey[600],
+                              ),
+                            ],
+                          ],
                         ),
                       ),
                       Text(
@@ -551,6 +581,254 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showConversationOptions(
+    BuildContext context,
+    Conversation conversation,
+    String currentUserId,
+    bool isDark,
+  ) {
+    final isPinned = conversation.pinnedBy?.contains(currentUserId) ?? false;
+    final isMuted = conversation.mutedBy?.contains(currentUserId) ?? false;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: (isDark ? Colors.grey[900] : Colors.white)?.withOpacity(0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.grey[700] : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  
+                  ListTile(
+                    leading: Icon(
+                      isPinned ? Icons.push_pin_outlined : Icons.push_pin,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    title: Text(
+                      isPinned ? 'Sabitlemeyi Kaldır' : 'Sabitle',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      await MessagingService.togglePinConversation(conversation.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isPinned ? 'Sabitleme kaldırıldı' : 'Sohbet sabitlendi'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  
+                  ListTile(
+                    leading: Icon(
+                      isMuted ? Icons.volume_up : Icons.volume_off,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    title: Text(
+                      isMuted ? 'Sesi Aç' : 'Sustur',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (!isMuted) {
+                        _showMuteOptions(context, conversation, isDark);
+                      } else {
+                        MessagingService.unmuteConversation(conversation.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sessize alma kaldırıldı')),
+                        );
+                      }
+                    },
+                  ),
+                  
+                  const Divider(height: 1),
+                  
+                  ListTile(
+                    leading: const Icon(Icons.delete, color: Colors.red),
+                    title: const Text(
+                      'Sohbeti Sil',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                    onTap: () async {
+                      Navigator.pop(context);
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Sohbeti Sil'),
+                          content: const Text(
+                            'Bu sohbeti silmek istediğinize emin misiniz? '
+                            'Tüm mesajlar kalıcı olarak silinecektir.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('İptal'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text(
+                                'Sil',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirm == true && context.mounted) {
+                        final success = await MessagingService.deleteConversation(
+                          conversation.id,
+                        );
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                success ? 'Sohbet silindi' : 'Sohbet silinemedi',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showMuteOptions(
+    BuildContext context,
+    Conversation conversation,
+    bool isDark,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey[700] : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Ne kadar süreyle susturulsun?',
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                
+                ListTile(
+                  title: Text(
+                    '8 Saat',
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      conversation.id,
+                      const Duration(hours: 8),
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('8 saat süreyle susturuldu')),
+                      );
+                    }
+                  },
+                ),
+                
+                ListTile(
+                  title: Text(
+                    '1 Hafta',
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      conversation.id,
+                      const Duration(days: 7),
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('1 hafta süreyle susturuldu')),
+                      );
+                    }
+                  },
+                ),
+                
+                ListTile(
+                  title: Text(
+                    'Her Zaman',
+                    style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await MessagingService.muteConversation(
+                      conversation.id,
+                      null, // null means forever
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Kalıcı olarak susturuldu')),
+                      );
+                    }
+                  },
+                ),
+                
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

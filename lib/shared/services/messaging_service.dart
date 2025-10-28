@@ -335,4 +335,129 @@ class MessagingService {
       return false;
     }
   }
+
+  /// Pin or unpin a conversation
+  static Future<bool> togglePinConversation(String conversationId) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      final convRef = _firestore.collection(_conversationsCollection).doc(conversationId);
+      final doc = await convRef.get();
+      
+      if (!doc.exists) return false;
+
+      final conversation = Conversation.fromFirestore(doc);
+      final pinnedBy = List<String>.from(conversation.pinnedBy ?? []);
+      
+      if (pinnedBy.contains(currentUserId)) {
+        pinnedBy.remove(currentUserId);
+      } else {
+        pinnedBy.add(currentUserId);
+      }
+
+      await convRef.update({'pinnedBy': pinnedBy});
+      return true;
+    } catch (e) {
+      print('Error toggling pin: $e');
+      return false;
+    }
+  }
+
+  /// Mute a conversation
+  static Future<bool> muteConversation(
+    String conversationId,
+    Duration? duration,
+  ) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      final convRef = _firestore.collection(_conversationsCollection).doc(conversationId);
+      final doc = await convRef.get();
+      
+      if (!doc.exists) return false;
+
+      final conversation = Conversation.fromFirestore(doc);
+      final mutedBy = List<String>.from(conversation.mutedBy ?? []);
+      
+      if (!mutedBy.contains(currentUserId)) {
+        mutedBy.add(currentUserId);
+      }
+
+      final mutedUntil = Map<String, dynamic>.from(conversation.mutedUntil ?? {});
+      if (duration != null) {
+        mutedUntil[currentUserId] = Timestamp.fromDate(DateTime.now().add(duration));
+      } else {
+        // Mute forever - set very far future date
+        mutedUntil[currentUserId] = Timestamp.fromDate(DateTime(2099, 12, 31));
+      }
+
+      await convRef.update({
+        'mutedBy': mutedBy,
+        'mutedUntil': mutedUntil,
+      });
+      return true;
+    } catch (e) {
+      print('Error muting conversation: $e');
+      return false;
+    }
+  }
+
+  /// Unmute a conversation
+  static Future<bool> unmuteConversation(String conversationId) async {
+    try {
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
+      if (currentUserId == null) return false;
+
+      final convRef = _firestore.collection(_conversationsCollection).doc(conversationId);
+      final doc = await convRef.get();
+      
+      if (!doc.exists) return false;
+
+      final conversation = Conversation.fromFirestore(doc);
+      final mutedBy = List<String>.from(conversation.mutedBy ?? []);
+      final mutedUntil = Map<String, dynamic>.from(conversation.mutedUntil ?? {});
+      
+      mutedBy.remove(currentUserId);
+      mutedUntil.remove(currentUserId);
+
+      await convRef.update({
+        'mutedBy': mutedBy,
+        'mutedUntil': mutedUntil,
+      });
+      return true;
+    } catch (e) {
+      print('Error unmuting conversation: $e');
+      return false;
+    }
+  }
+
+  /// Delete a conversation and all its messages
+  static Future<bool> deleteConversation(String conversationId) async {
+    try {
+      // Delete all messages in the conversation
+      final messagesQuery = await _firestore
+          .collection(_messagesCollection)
+          .where('conversationId', isEqualTo: conversationId)
+          .get();
+
+      final batch = _firestore.batch();
+      
+      for (final doc in messagesQuery.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Delete the conversation
+      batch.delete(
+        _firestore.collection(_conversationsCollection).doc(conversationId),
+      );
+
+      await batch.commit();
+      return true;
+    } catch (e) {
+      print('Error deleting conversation: $e');
+      return false;
+    }
+  }
 }
