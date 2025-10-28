@@ -1,6 +1,6 @@
-# 🎵 MusicShare - Müzik Keşif ve Paylaşım Platformu
+# 🎵 Tuniverse - Müzik Evreni Uygulaması
 
-Letterboxd'den ilham alan, müzik severler için modern bir müzik keşif ve paylaşım uygulaması. Flutter ve Firebase ile geliştirildi.
+Letterboxd'den ilham alan, müzik severler için modern bir müzik keşif ve paylaşım uygulaması. Tuniverse ile müzik dünyanızı keşfedin! Flutter ve Firebase ile geliştirildi.
 
 ## ✨ Özellikler
 

@@ -1,7 +1,7 @@
-# MusicBoxd - Development Summary
+# Tuniverse - Development Summary
 
 ## 🎉 Project Overview
-MusicBoxd is a comprehensive music social network app combining Letterboxd-style reviews with Spotify/Last.fm integration and Instagram-inspired messaging features.
+Tuniverse is a comprehensive music social network app combining Letterboxd-style reviews with Spotify/Last.fm integration and Instagram-inspired messaging features.
 
 ## 📊 Development Progress
 

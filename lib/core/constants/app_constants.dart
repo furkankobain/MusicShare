@@ -1,12 +1,12 @@
 class AppConstants {
-  static const String appName = 'MusicShare';
-  static const String appDescription = 'Müzik dünyanız';
+  static const String appName = 'Tuniverse';
+  static const String appDescription = 'Müzik evreniniz';
   static const double defaultBorderRadius = 12.0;
   
   // Spotify API Constants
   static const String spotifyClientId = 'fa707acb3b8942009549def708444b94';
   static const String spotifyClientSecret = 'efecce9e795d4b3a85e413a3749df9d0';
-  static const String spotifyRedirectUri = 'musicshare://callback';
+  static const String spotifyRedirectUri = 'tuniverse://callback';
   static const List<String> spotifyScopes = [
     'user-read-recently-played',
     'user-top-read',
