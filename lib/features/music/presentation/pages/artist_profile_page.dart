@@ -82,17 +82,8 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
 
   Future<List<Map<String, dynamic>>> _getArtistTopTracks(String artistId) async {
     try {
-      final token = await EnhancedSpotifyService.accessToken ??
-          await _getClientCredentialsToken();
-      if (token == null) return [];
-
-      // Search for top tracks by this artist
-      final results = await EnhancedSpotifyService.searchTracks(
-        'artist:${widget.artist['name']}',
-        limit: 10,
-      );
-
-      return results;
+      // Use the new getArtistTopTracks method
+      return await EnhancedSpotifyService.getArtistTopTracks(artistId);
     } catch (e) {
       print('Error loading top tracks: $e');
       return [];
@@ -101,31 +92,16 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
 
   Future<List<Map<String, dynamic>>> _getArtistAlbums(String artistId) async {
     try {
-      final token = await EnhancedSpotifyService.accessToken ??
-          await _getClientCredentialsToken();
-      if (token == null) return [];
-
-      final results = await EnhancedSpotifyService.search(
-        query: 'artist:${widget.artist['name']}',
-        types: ['album'],
-        limit: 20,
+      // Use the new getArtistAlbums method
+      // Include only albums and singles
+      return await EnhancedSpotifyService.getArtistAlbums(
+        artistId,
+        includeGroups: 'album,single',
       );
-
-      if (results['albums']?['items'] != null) {
-        final albums = results['albums']['items'] as List;
-        return albums.cast<Map<String, dynamic>>();
-      }
-
-      return [];
     } catch (e) {
       print('Error loading albums: $e');
       return [];
     }
-  }
-
-  Future<String?> _getClientCredentialsToken() async {
-    // This should be implemented in EnhancedSpotifyService
-    return null;
   }
 
   Future<Map<String, dynamic>?> _getLastFmInfo(String artistName) async {

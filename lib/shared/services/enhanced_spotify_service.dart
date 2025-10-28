@@ -1245,25 +1245,116 @@ class EnhancedSpotifyService {
   /// Get artist information
   static Future<Map<String, dynamic>?> getArtistInfo(String artistId) async {
     try {
-      if (!_isConnected || _accessToken == null) return null;
-
-      // Mock artist info - replace with real API call
-      return {
-        'id': artistId,
-        'name': 'Artist Name',
-        'genres': ['pop', 'indie'],
-        'popularity': 85,
-        'followers': {'total': 1000000},
-        'images': [
-          {
-            'url': 'https://i.scdn.co/image/ab6761610000e5ebbb54dde68cd23e2a268ae0f5',
-            'height': 640,
-            'width': 640,
-          }
-        ],
-      };
-    } catch (e) {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/artists/$artistId',
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200) {
+          return response.data as Map<String, dynamic>;
+        }
+      }
+      
       return null;
+    } catch (e) {
+      print('Error fetching artist info: $e');
+      return null;
+    }
+  }
+
+  /// Get artist top tracks
+  static Future<List<Map<String, dynamic>>> getArtistTopTracks(
+    String artistId, {
+    String market = 'TR',
+  }) async {
+    try {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/artists/$artistId/top-tracks',
+          queryParameters: {'market': market},
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['tracks'] != null) {
+          final tracks = response.data['tracks'] as List;
+          return tracks.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching artist top tracks: $e');
+      return [];
+    }
+  }
+
+  /// Get artist albums
+  static Future<List<Map<String, dynamic>>> getArtistAlbums(
+    String artistId, {
+    String? includeGroups,
+    String market = 'TR',
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final queryParams = {
+          'market': market,
+          'limit': limit,
+          'offset': offset,
+        };
+        
+        if (includeGroups != null) {
+          queryParams['include_groups'] = includeGroups;
+        }
+        
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/artists/$artistId/albums',
+          queryParameters: queryParams,
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['items'] != null) {
+          final albums = response.data['items'] as List;
+          return albums.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching artist albums: $e');
+      return [];
     }
   }
 
