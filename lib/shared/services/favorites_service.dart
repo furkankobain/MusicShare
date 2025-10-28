@@ -146,12 +146,85 @@ class FavoritesService {
     });
   }
 
+  /// Add artist to favorites
+  static Future<bool> addArtistToFavorites(Map<String, dynamic> artist) async {
+    try {
+      final artistId = artist['id'] as String;
+      final favoriteData = {
+        'id': artistId,
+        'type': 'artist',
+        'name': artist['name'],
+        'genres': artist['genres'],
+        'images': artist['images'],
+        'popularity': artist['popularity'],
+        'followers': artist['followers'],
+        'external_urls': artist['external_urls'],
+        'addedAt': FieldValue.serverTimestamp(),
+      };
+
+      await _getFavoritesCollection().doc('artist_$artistId').set(favoriteData);
+      return true;
+    } catch (e) {
+      print('Error adding artist to favorites: $e');
+      return false;
+    }
+  }
+
+  /// Remove artist from favorites
+  static Future<bool> removeArtistFromFavorites(String artistId) async {
+    try {
+      await _getFavoritesCollection().doc('artist_$artistId').delete();
+      return true;
+    } catch (e) {
+      print('Error removing artist from favorites: $e');
+      return false;
+    }
+  }
+
+  /// Check if artist is in favorites
+  static Future<bool> isArtistFavorite(String artistId) async {
+    try {
+      final doc = await _getFavoritesCollection().doc('artist_$artistId').get();
+      return doc.exists;
+    } catch (e) {
+      print('Error checking artist favorite: $e');
+      return false;
+    }
+  }
+
+  /// Get all favorite artists
+  static Stream<List<Map<String, dynamic>>> getFavoriteArtists() {
+    return _getFavoritesCollection()
+        .where('type', isEqualTo: 'artist')
+        .orderBy('addedAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data;
+      }).toList();
+    });
+  }
+
+  /// Toggle artist favorite
+  static Future<bool> toggleArtistFavorite(Map<String, dynamic> artist) async {
+    final artistId = artist['id'] as String;
+    final isFavorite = await isArtistFavorite(artistId);
+    
+    if (isFavorite) {
+      return await removeArtistFromFavorites(artistId);
+    } else {
+      return await addArtistToFavorites(artist);
+    }
+  }
+
   /// Get favorites count
   static Future<Map<String, int>> getFavoritesCount() async {
     try {
       final snapshot = await _getFavoritesCollection().get();
       int trackCount = 0;
       int albumCount = 0;
+      int artistCount = 0;
 
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -160,17 +233,20 @@ class FavoritesService {
           trackCount++;
         } else if (type == 'album') {
           albumCount++;
+        } else if (type == 'artist') {
+          artistCount++;
         }
       }
 
       return {
         'tracks': trackCount,
         'albums': albumCount,
-        'total': trackCount + albumCount,
+        'artists': artistCount,
+        'total': trackCount + albumCount + artistCount,
       };
     } catch (e) {
       print('Error getting favorites count: $e');
-      return {'tracks': 0, 'albums': 0, 'total': 0};
+      return {'tracks': 0, 'albums': 0, 'artists': 0, 'total': 0};
     }
   }
 

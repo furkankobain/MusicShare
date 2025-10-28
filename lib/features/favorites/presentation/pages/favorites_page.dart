@@ -18,7 +18,7 @@ class _FavoritesPageState extends State<FavoritesPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -49,6 +49,7 @@ class _FavoritesPageState extends State<FavoritesPage>
             Tab(text: 'Tümü'),
             Tab(text: 'Şarkılar'),
             Tab(text: 'Albümler'),
+            Tab(text: 'Sanatçılar'),
           ],
         ),
       ),
@@ -58,6 +59,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           _buildAllFavorites(isDark),
           _buildFavoriteTracks(isDark),
           _buildFavoriteAlbums(isDark),
+          _buildFavoriteArtists(isDark),
         ],
       ),
     );
@@ -96,8 +98,10 @@ class _FavoritesPageState extends State<FavoritesPage>
             
             if (type == 'track') {
               return _buildTrackCard(item, isDark);
-            } else {
+            } else if (type == 'album') {
               return _buildAlbumCard(item, isDark);
+            } else {
+              return _buildArtistCard(item, isDark);
             }
           },
         );
@@ -492,6 +496,270 @@ class _FavoritesPageState extends State<FavoritesPage>
         ),
       ),
     );
+  }
+
+  Widget _buildFavoriteArtists(bool isDark) {
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: FavoritesService.getFavoriteArtists(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Hata: ${snapshot.error}'),
+          );
+        }
+
+        final artists = snapshot.data ?? [];
+
+        if (artists.isEmpty) {
+          return _buildEmptyState(
+            'Henüz favori sanatçı eklemediniz',
+            'Beğendiğiniz sanatçıları favorilere ekleyin',
+            isDark,
+          );
+        }
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: artists.length,
+          itemBuilder: (context, index) {
+            return _buildArtistGridCard(artists[index], isDark);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildArtistCard(Map<String, dynamic> artist, bool isDark) {
+    final artistName = artist['name'] as String? ?? 'Unknown Artist';
+    final images = artist['images'] as List? ?? [];
+    final imageUrl = images.isNotEmpty ? images[0]['url'] as String? : null;
+    final followers = artist['followers'] as Map<String, dynamic>?;
+    final followerCount = followers?['total'] as int? ?? 0;
+
+    return GestureDetector(
+      onTap: () => context.push('/artist-profile', extra: artist),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? ModernDesignSystem.darkCard
+              : ModernDesignSystem.lightCard,
+          borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+          border: Border.all(
+            color: isDark
+                ? ModernDesignSystem.darkBorder
+                : ModernDesignSystem.lightBorder,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Artist Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: imageUrl != null
+                  ? CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        width: 60,
+                        height: 60,
+                        color: ModernDesignSystem.darkCard,
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        width: 60,
+                        height: 60,
+                        color: ModernDesignSystem.darkCard,
+                        child: const Icon(Icons.person),
+                      ),
+                    )
+                  : Container(
+                      width: 60,
+                      height: 60,
+                      color: ModernDesignSystem.darkCard,
+                      child: const Icon(Icons.person),
+                    ),
+            ),
+
+            const SizedBox(width: 12),
+
+            // Artist Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    artistName,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: ModernDesignSystem.fontSizeM,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatFollowers(followerCount)} takipçi',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.6)
+                          : Colors.black.withValues(alpha: 0.6),
+                      fontSize: ModernDesignSystem.fontSizeS,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+
+            // Favorite Icon
+            Icon(
+              Icons.bookmark,
+              color: ModernDesignSystem.accentYellow,
+              size: 24,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistGridCard(Map<String, dynamic> artist, bool isDark) {
+    final artistName = artist['name'] as String? ?? 'Unknown Artist';
+    final images = artist['images'] as List? ?? [];
+    final imageUrl = images.isNotEmpty ? images[0]['url'] as String? : null;
+    final followers = artist['followers'] as Map<String, dynamic>?;
+    final followerCount = followers?['total'] as int? ?? 0;
+
+    return GestureDetector(
+      onTap: () => context.push('/artist-profile', extra: artist),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark
+              ? ModernDesignSystem.darkCard
+              : ModernDesignSystem.lightCard,
+          borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+          border: Border.all(
+            color: isDark
+                ? ModernDesignSystem.darkBorder
+                : ModernDesignSystem.lightBorder,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Artist Image
+            Expanded(
+              child: Stack(
+                children: [
+                  Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: imageUrl != null
+                          ? CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                width: 120,
+                                height: 120,
+                                color: ModernDesignSystem.darkCard,
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                width: 120,
+                                height: 120,
+                                color: ModernDesignSystem.darkCard,
+                                child: const Icon(Icons.person, size: 48),
+                              ),
+                            )
+                          : Container(
+                              width: 120,
+                              height: 120,
+                              color: ModernDesignSystem.darkCard,
+                              child: const Icon(Icons.person, size: 48),
+                            ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: ModernDesignSystem.accentYellow,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.bookmark,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Artist Info
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    artistName,
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black,
+                      fontSize: ModernDesignSystem.fontSizeM,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatFollowers(followerCount)} takipçi',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.5)
+                          : Colors.black.withValues(alpha: 0.5),
+                      fontSize: ModernDesignSystem.fontSizeXS,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatFollowers(int followers) {
+    if (followers >= 1000000) {
+      return '${(followers / 1000000).toStringAsFixed(1)}M';
+    } else if (followers >= 1000) {
+      return '${(followers / 1000).toStringAsFixed(1)}K';
+    }
+    return followers.toString();
   }
 
   Widget _buildEmptyState(String title, String subtitle, bool isDark) {

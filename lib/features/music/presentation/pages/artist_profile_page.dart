@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/lastfm_service.dart';
+import '../../../../shared/services/favorites_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ArtistProfilePage extends StatefulWidget {
@@ -27,12 +28,41 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
   Map<String, dynamic>? _artistDetails;
   Map<String, dynamic>? _lastFmInfo;
   List<Map<String, dynamic>> _similarArtists = [];
+  bool _isFavorite = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _loadArtistData();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final artistId = widget.artist['id'] as String;
+    final isFav = await FavoritesService.isArtistFavorite(artistId);
+    if (mounted) {
+      setState(() => _isFavorite = isFav);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final success = await FavoritesService.toggleArtistFavorite(
+      _artistDetails ?? widget.artist,
+    );
+    if (success && mounted) {
+      setState(() => _isFavorite = !_isFavorite);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite
+                ? 'Favorilere eklendi'
+                : 'Favorilerden kaldırıldı',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -299,23 +329,24 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                                   ),
                                 ),
                               ),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.headphones,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${_formatFollowers(followers)} aylık dinleyici',
-                                  style: TextStyle(
+                            if (popularity > 0)
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.trending_up,
                                     color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: ModernDesignSystem.fontSizeS,
+                                    size: 16,
                                   ),
-                                ),
-                              ],
-                            ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Popülerlik: $popularity/100',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(alpha: 0.8),
+                                      fontSize: ModernDesignSystem.fontSizeS,
+                                    ),
+                                  ),
+                                ],
+                              ),
                           ],
                         ),
                       ],
@@ -325,6 +356,14 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
               ),
             ),
             actions: [
+              // Favorite Button
+              IconButton(
+                icon: Icon(
+                  _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  color: _isFavorite ? ModernDesignSystem.accentYellow : null,
+                ),
+                onPressed: _toggleFavorite,
+              ),
               // Share Button
               IconButton(
                 icon: const Icon(Icons.share),

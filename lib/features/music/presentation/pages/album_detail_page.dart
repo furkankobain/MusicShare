@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/firebase_review_service.dart';
+import '../../../../shared/services/favorites_service.dart';
 import '../../../../shared/widgets/rating/rating_widget.dart';
 import '../../../../shared/widgets/rating/review_card.dart';
 import '../../../../shared/widgets/rating/add_review_sheet.dart';
@@ -44,6 +45,34 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
     super.initState();
     _loadAlbumDetails();
     _loadReviews();
+    _checkFavoriteStatus();
+  }
+
+  Future<void> _checkFavoriteStatus() async {
+    final albumId = widget.album['id'] as String;
+    final isFav = await FavoritesService.isAlbumFavorite(albumId);
+    if (mounted) {
+      setState(() => _isFavorite = isFav);
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    final success = await FavoritesService.toggleAlbumFavorite(
+      _albumDetails ?? widget.album,
+    );
+    if (success && mounted) {
+      setState(() => _isFavorite = !_isFavorite);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _isFavorite
+                ? 'Favorilere eklendi'
+                : 'Favorilerden kaldırıldı',
+          ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> _loadAlbumDetails() async {
@@ -424,12 +453,10 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               // Favorite Button
               IconButton(
                 icon: Icon(
-                  _isFavorite ? Icons.favorite : Icons.favorite_border,
-                  color: _isFavorite ? Colors.red : null,
+                  _isFavorite ? Icons.bookmark : Icons.bookmark_border,
+                  color: _isFavorite ? ModernDesignSystem.accentYellow : null,
                 ),
-                onPressed: () {
-                  setState(() => _isFavorite = !_isFavorite);
-                },
+                onPressed: _toggleFavorite,
               ),
               // Share Button
               IconButton(
