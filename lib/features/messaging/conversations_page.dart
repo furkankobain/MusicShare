@@ -2,14 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../shared/models/conversation.dart';
+import '../../shared/models/spotify_activity.dart';
 import '../../shared/services/messaging_service.dart';
 import '../../shared/services/firebase_bypass_auth_service.dart';
+import '../../shared/services/spotify_activity_service.dart';
 import '../../core/theme/app_theme.dart';
 import 'chat_page.dart';
 import 'user_search_page.dart';
 
-class ConversationsPage extends StatelessWidget {
+class ConversationsPage extends StatefulWidget {
   const ConversationsPage({super.key});
+
+  @override
+  State<ConversationsPage> createState() => _ConversationsPageState();
+}
+
+class _ConversationsPageState extends State<ConversationsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   String _formatTimestamp(DateTime? timestamp) {
     if (timestamp == null) return '';
@@ -77,7 +93,7 @@ class ConversationsPage extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Icon(Icons.search, color: isDark ? Colors.white : Colors.black87),
+            icon: Icon(Icons.add_comment, color: isDark ? Colors.white : Colors.black87),
             onPressed: () {
               Navigator.push(
                 context,
@@ -91,7 +107,17 @@ class ConversationsPage extends StatelessWidget {
       ),
       body: currentUserId == null
           ? _buildNotLoggedIn(isDark)
-          : StreamBuilder<List<Conversation>>(
+          : Column(
+              children: [
+                // Search bar
+                _buildSearchBar(isDark),
+                
+                // Activity Notes section (Instagram-style)
+                _buildActivityNotes(isDark),
+                
+                // Conversations list
+                Expanded(
+                  child: StreamBuilder<List<Conversation>>(
               stream: MessagingService.getConversations(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -108,10 +134,29 @@ class ConversationsPage extends StatelessWidget {
                   return _buildEmpty(isDark);
                 }
 
+                // Filter conversations based on search
+                final filteredConversations = _searchQuery.isEmpty
+                    ? conversations
+                    : conversations.where((conv) {
+                        final otherUserName = conv.getOtherParticipantName(currentUserId!);
+                        return otherUserName.toLowerCase().contains(_searchQuery.toLowerCase());
+                      }).toList();
+
+                if (filteredConversations.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'Arama sonucu bulunamadı',
+                      style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  );
+                }
+
                 return ListView.builder(
-                  itemCount: conversations.length,
+                  itemCount: filteredConversations.length,
                   itemBuilder: (context, index) {
-                    final conversation = conversations[index];
+                    final conversation = filteredConversations[index];
                     return _buildConversationTile(
                       context,
                       conversation,
@@ -121,6 +166,9 @@ class ConversationsPage extends StatelessWidget {
                   },
                 );
               },
+            ),
+                ),
+              ],
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -349,6 +397,156 @@ class ConversationsPage extends StatelessWidget {
             style: TextStyle(
               color: isDark ? Colors.grey[500] : Colors.grey[500],
               fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      color: isDark ? Colors.grey[900] : Colors.white,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Sohbet ara...',
+          prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.clear, color: isDark ? Colors.grey[400] : Colors.grey[600]),
+                  onPressed: () {
+                    setState(() {
+                      _searchController.clear();
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(24),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildActivityNotes(bool isDark) {
+    // TODO: Get following user IDs from a follow service
+    final followingUserIds = <String>[]; // Placeholder
+
+    if (followingUserIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      height: 100,
+      color: isDark ? Colors.grey[900] : Colors.white,
+      padding: const EdgeInsets.only(left: 8),
+      child: StreamBuilder<List<SpotifyActivity>>(
+        stream: SpotifyActivityService.getFollowingActivities(followingUserIds),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const SizedBox.shrink();
+          }
+
+          final activities = snapshot.data!;
+
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: activities.length,
+            itemBuilder: (context, index) {
+              final activity = activities[index];
+              return _buildActivityNote(activity, isDark);
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildActivityNote(SpotifyActivity activity, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              // Album art circle
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: activity.isCurrentlyListening
+                        ? AppTheme.primaryColor
+                        : Colors.grey[400]!,
+                    width: 2,
+                  ),
+                  image: activity.albumImageUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(activity.albumImageUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
+                ),
+                child: activity.albumImageUrl == null
+                    ? Icon(Icons.music_note, color: Colors.grey[400])
+                    : null,
+              ),
+              // Playing indicator
+              if (activity.isCurrentlyListening)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? Colors.grey[900]! : Colors.white,
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow,
+                      color: Colors.white,
+                      size: 12,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 60,
+            child: Text(
+              activity.statusText,
+              style: TextStyle(
+                color: activity.isCurrentlyListening
+                    ? AppTheme.primaryColor
+                    : (isDark ? Colors.grey[400] : Colors.grey[600]),
+                fontSize: 10,
+                fontWeight: activity.isCurrentlyListening
+                    ? FontWeight.bold
+                    : FontWeight.normal,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
