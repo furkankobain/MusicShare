@@ -1,0 +1,203 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function isChatParticipant(chatId) {
+      return isAuthenticated() && 
+             request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+    
+    function isNotBlocked(userId) {
+      return isAuthenticated() && 
+             !(request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.blockedUsers);
+    }
+    
+    function hasFollowRelationship(userId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(userId)).data;
+      return request.auth.uid in userDoc.followers || 
+             request.auth.uid in userDoc.following ||
+             !userDoc.isPrivate;
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+      
+      // User stats
+      match /stats/{statId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId);
+      }
+      
+      // User chats
+      match /chats/{chatId} {
+        allow read: if isOwner(userId);
+        allow write: if isOwner(userId);
+      }
+      
+      // User top tracks
+      match /top_tracks/{trackId} {
+        allow read: if isAuthenticated();
+        allow write: if isOwner(userId);
+      }
+    }
+    
+    // Chats collection
+    match /chats/{chatId} {
+      allow read: if isChatParticipant(chatId);
+      allow create: if isAuthenticated();
+      allow update: if isChatParticipant(chatId);
+      allow delete: if isChatParticipant(chatId);
+    }
+    
+    // Group chats collection
+    match /group_chats/{groupId} {
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.memberIds;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                      (request.auth.uid in resource.data.memberIds ||
+                       request.auth.uid in resource.data.admins);
+      allow delete: if isAuthenticated() && 
+                      request.auth.uid in resource.data.admins;
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && 
+                     isChatParticipant(resource.data.chatId);
+      allow create: if isAuthenticated() && 
+                      isChatParticipant(request.resource.data.chatId) &&
+                      isOwner(request.resource.data.senderId) &&
+                      isNotBlocked(request.resource.data.chatId);
+      allow update: if isAuthenticated() && 
+                      isOwner(resource.data.senderId);
+      allow delete: if isAuthenticated() && 
+                      isOwner(resource.data.senderId);
+    }
+    
+    // Activities collection
+    match /activities/{activityId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Listens collection
+    match /listens/{listenId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Ratings collection
+    match /ratings/{ratingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Reviews collection
+    match /reviews/{reviewId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Follow requests collection
+    match /follow_requests/{requestId} {
+      allow read: if isAuthenticated() && 
+                     (isOwner(resource.data.fromUserId) ||
+                      isOwner(resource.data.toUserId));
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.fromUserId);
+      allow update: if isAuthenticated() && 
+                      isOwner(resource.data.toUserId);
+      allow delete: if isAuthenticated() && 
+                      (isOwner(resource.data.fromUserId) ||
+                       isOwner(resource.data.toUserId));
+    }
+    
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated();
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Tracks collection (read-only for users)
+    match /tracks/{trackId} {
+      allow read: if true;
+      allow write: if false; // Only admin/backend can write
+    }
+    
+    // Audio features collection (read-only for users)
+    match /audio_features/{featureId} {
+      allow read: if true;
+      allow write: if false; // Only admin/backend can write
+    }
+    
+    // Spotify blends collection
+    match /spotify_blends/{blendId} {
+      allow read: if isAuthenticated() && 
+                     request.auth.uid in resource.data.userIds;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+                      request.auth.uid in resource.data.userIds;
+      allow delete: if isAuthenticated() && 
+                      request.auth.uid in resource.data.userIds;
+    }
+    
+    // Playlists collection
+    match /playlists/{playlistId} {
+      allow read: if isAuthenticated() && 
+                     (resource.data.isPublic == true ||
+                      isOwner(resource.data.userId));
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Trending collection (read-only)
+    match /trending/{trendingId} {
+      allow read: if true;
+      allow write: if false; // Only Cloud Functions can write
+    }
+    
+    // Recommendation feedback collection
+    match /recommendation_feedback/{feedbackId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+    
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
