@@ -1,658 +1,312 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../music/presentation/pages/rate_music_page.dart';
+import '../../../../core/theme/modern_design_system.dart';
+import '../../../../shared/services/enhanced_spotify_service.dart';
+import '../../../../shared/widgets/cards/album_card.dart';
+import '../../../../shared/widgets/cards/track_card.dart';
+import '../../../../shared/widgets/loading/loading_skeletons.dart';
 
-class DiscoverPage extends ConsumerWidget {
+class DiscoverPage extends ConsumerStatefulWidget {
   const DiscoverPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiscoverPage> createState() => _DiscoverPageState();
+}
+
+class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerProviderStateMixin {
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _newReleases = [];
+  List<Map<String, dynamic>> _topTracks = [];
+  List<Map<String, dynamic>> _featured = [];
+  List<Map<String, dynamic>> _categories = [];
+  late TabController _tabController;
+  
+  String _currentViewMode = 'grid';
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _loadData();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final results = await Future.wait([
+        EnhancedSpotifyService.getNewReleases(limit: 20),
+        EnhancedSpotifyService.getTopTracks(limit: 20),
+        EnhancedSpotifyService.getFeaturedPlaylists(limit: 10),
+        EnhancedSpotifyService.getCategories(limit: 12),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _newReleases = results[0];
+          _topTracks = results[1];
+          _featured = results[2];
+          _categories = results[3];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading discover data: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Keşfet'),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
+        title: const Text('Keşfet', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: isDark ? ModernDesignSystem.darkSurface : ModernDesignSystem.lightSurface,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
+            icon: Icon(_currentViewMode == 'grid' ? Icons.view_list : Icons.grid_view),
+            onPressed: () => setState(() => _currentViewMode = _currentViewMode == 'grid' ? 'list' : 'grid'),
           ),
           IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () => _showNotificationsDialog(context),
+            icon: const Icon(Icons.search),
+            onPressed: () => context.push('/search'),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: ModernDesignSystem.accentPurple,
+          unselectedLabelColor: isDark ? Colors.grey[500] : Colors.grey[600],
+          indicatorColor: ModernDesignSystem.accentPurple,
+          indicatorWeight: 3,
+          tabs: const [
+            Tab(text: 'Yeni Çıkanlar'),
+            Tab(text: 'Popüler'),
+            Tab(text: 'Playlistler'),
+            Tab(text: 'Kategoriler'),
+          ],
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppConstants.defaultPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: TabBarView(
+          controller: _tabController,
           children: [
-            // Welcome Section
-            _buildWelcomeSection(context),
-            
-            const SizedBox(height: 24),
-            
-            // Quick Actions
-            _buildQuickActions(context),
-            
-            const SizedBox(height: 24),
-            
-            // Featured Tracks
-            _buildFeaturedSection('Öne Çıkan Şarkılar', _buildFeaturedTracks(ref)),
-            
-            const SizedBox(height: 24),
-            
-            // New Releases
-            _buildFeaturedSection('Yeni Çıkanlar', _buildNewReleases(ref)),
-            
-            const SizedBox(height: 24),
-            
-            // Trending Artists
-            _buildFeaturedSection('Trend Sanatçılar', _buildTrendingArtists(ref)),
-            
-            const SizedBox(height: 24),
-            
-            // Recommendations
-            _buildFeaturedSection('Sana Özel Öneriler', _buildRecommendations(ref)),
+            _buildNewReleasesTab(isDark),
+            _buildTopTracksTab(isDark),
+            _buildFeaturedTab(isDark),
+            _buildCategoriesTab(isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWelcomeSection(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryColor.withValues(alpha: 0.1),
-            AppTheme.primaryColor.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildNewReleasesTab(bool isDark) {
+    if (_isLoading) {
+      return _currentViewMode == 'grid'
+          ? const GridSkeleton(itemCount: 20)
+          : const ListSkeleton(itemCount: 20);
+    }
+
+    if (_newReleases.isEmpty) {
+      return Center(
+        child: Text(
+          'Yeni çıkan albüm bulunamadı',
+          style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
         ),
-        borderRadius: BorderRadius.circular(16),
+      );
+    }
+
+    if (_currentViewMode == 'grid') {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: _newReleases.length,
+        itemBuilder: (context, index) => AlbumCard(album: _newReleases[index]),
+      );
+    } else {
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _newReleases.length,
+        itemBuilder: (context, index) {
+          // Convert album to track format for TrackCard
+          final album = _newReleases[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: AlbumCard(album: album),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildTopTracksTab(bool isDark) {
+    if (_isLoading) {
+      return const ListSkeleton(itemCount: 20);
+    }
+
+    if (_topTracks.isEmpty) {
+      return Center(
+        child: Text(
+          'Popüler şarkı bulunamadı',
+          style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _topTracks.length,
+      itemBuilder: (context, index) => TrackCard(track: _topTracks[index]),
+    );
+  }
+
+  Widget _buildFeaturedTab(bool isDark) {
+    if (_isLoading) {
+      return const GridSkeleton(itemCount: 10);
+    }
+
+    if (_featured.isEmpty) {
+      return Center(
+        child: Text(
+          'Öne çıkan playlist bulunamadı',
+          style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.7,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
       ),
-      child: Row(
-        children: [
-          Expanded(
+      itemCount: _featured.length,
+      itemBuilder: (context, index) => AlbumCard(album: _featured[index]),
+    );
+  }
+
+  Widget _buildCategoriesTab(bool isDark) {
+    if (_isLoading) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 1.5,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: 12,
+        itemBuilder: (context, index) => const AlbumCardSkeleton(),
+      );
+    }
+
+    if (_categories.isEmpty) {
+      return Center(
+        child: Text(
+          'Kategori bulunamadı',
+          style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.5,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _categories.length,
+      itemBuilder: (context, index) {
+        final category = _categories[index];
+        final name = category['name'] ?? 'Unknown';
+        final icons = category['icons'] as List?;
+        final imageUrl = icons?.isNotEmpty == true ? icons![0]['url'] : null;
+
+        return InkWell(
+          onTap: () {
+            // Navigate to category detail
+          },
+          borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: _getCategoryGradient(index),
+              borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+            ),
+            padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  'Yeni Müzikler Keşfet',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
+                Icon(
+                  _getCategoryIcon(name),
+                  size: 40,
+                  color: Colors.white,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Favori sanatçılarınızın yeni şarkılarını keşfedin ve puanlayın',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
+                Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.music_note,
-              size: 32,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildActionCard(
-            context,
-            icon: Icons.trending_up,
-            title: 'Trend',
-            subtitle: 'Popüler şarkılar',
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionCard(
-            context,
-            icon: Icons.new_releases,
-            title: 'Yeni',
-            subtitle: 'Son çıkanlar',
-            onTap: () {},
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildActionCard(
-            context,
-            icon: Icons.recommend,
-            title: 'Öneriler',
-            subtitle: 'Sana özel',
-            onTap: () {},
-          ),
-        ),
-      ],
-    );
+  LinearGradient _getCategoryGradient(int index) {
+    final gradients = [
+      ModernDesignSystem.primaryGradient,
+      ModernDesignSystem.purpleGradient,
+      ModernDesignSystem.blueGradient,
+      ModernDesignSystem.sunsetGradient,
+      ModernDesignSystem.modernGradient,
+    ];
+    return gradients[index % gradients.length];
   }
 
-  Widget _buildActionCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                size: 24,
-                color: AppTheme.primaryColor,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFeaturedTracks(WidgetRef ref) {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          final tracks = [
-            {
-              'name': 'Anti-Hero',
-              'artist': 'Taylor Swift',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5',
-            },
-            {
-              'name': 'As It Was',
-              'artist': 'Harry Styles',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273f7b7174bef6f3fbfda3a0bb7',
-            },
-            {
-              'name': 'Heat Waves',
-              'artist': 'Glass Animals',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2737c05b5e35713c6643bb9a7c0',
-            },
-            {
-              'name': 'Stay',
-              'artist': 'The Kid LAROI',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856',
-            },
-            {
-              'name': 'Good 4 U',
-              'artist': 'Olivia Rodrigo',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2739e5d5a6f7b3b5a6f7b3b5a6f',
-            },
-          ];
-          
-          final track = tracks[index];
-          
-          return Container(
-            width: 160,
-            margin: const EdgeInsets.only(right: 12),
-            child: Card(
-              child: InkWell(
-                onTap: () => _openRateMusicPage(context, track),
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: track['image']!,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.music_note),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            track['name']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            track['artist']!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildNewReleases(WidgetRef ref) {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          final releases = [
-            {
-              'name': 'Midnights',
-              'artist': 'Taylor Swift',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5',
-            },
-            {
-              'name': 'Harry\'s House',
-              'artist': 'Harry Styles',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273f7b7174bef6f3fbfda3a0bb7',
-            },
-            {
-              'name': 'Dreamland',
-              'artist': 'Glass Animals',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2737c05b5e35713c6643bb9a7c0',
-            },
-            {
-              'name': 'F*CK LOVE 3',
-              'artist': 'The Kid LAROI',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856',
-            },
-            {
-              'name': 'SOUR',
-              'artist': 'Olivia Rodrigo',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2739e5d5a6f7b3b5a6f7b3b5a6f',
-            },
-          ];
-          
-          final release = releases[index];
-          
-          return Container(
-            width: 160,
-            margin: const EdgeInsets.only(right: 12),
-            child: Card(
-              child: InkWell(
-                onTap: () => _openRateMusicPage(context, release),
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: release['image']!,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.music_note),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            release['name']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            release['artist']!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRecommendations(WidgetRef ref) {
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          final recommendations = [
-            {
-              'name': 'Blinding Lights',
-              'artist': 'The Weeknd',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36',
-            },
-            {
-              'name': 'Levitating',
-              'artist': 'Dua Lipa',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273f7b7174bef6f3fbfda3a0bb7',
-            },
-            {
-              'name': 'Watermelon Sugar',
-              'artist': 'Harry Styles',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273f7b7174bef6f3fbfda3a0bb7',
-            },
-            {
-              'name': 'Peaches',
-              'artist': 'Justin Bieber',
-              'image': 'https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856',
-            },
-            {
-              'name': 'Industry Baby',
-              'artist': 'Lil Nas X',
-              'image': 'https://i.scdn.co/image/ab67616d0000b2739e5d5a6f7b3b5a6f7b3b5a6f',
-            },
-          ];
-          
-          final recommendation = recommendations[index];
-          
-          return Container(
-            width: 160,
-            margin: const EdgeInsets.only(right: 12),
-            child: Card(
-              child: InkWell(
-                onTap: () => _openRateMusicPage(context, recommendation),
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: CachedNetworkImage(
-                        imageUrl: recommendation['image']!,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          height: 120,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.music_note),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            recommendation['name']!,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            recommendation['artist']!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTrendingArtists(WidgetRef ref) {
-    return SizedBox(
-      height: 120,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 8,
-        itemBuilder: (context, index) {
-          final artists = [
-            'Taylor Swift',
-            'The Weeknd',
-            'Bad Bunny',
-            'Drake',
-            'Billie Eilish',
-            'Ed Sheeran',
-            'Ariana Grande',
-            'Post Malone',
-          ];
-          
-          final artist = artists[index];
-          
-          return Container(
-            width: 100,
-            margin: const EdgeInsets.only(right: 12),
-            child: Card(
-              child: InkWell(
-                onTap: () => _openArtistPage(context, artist),
-                borderRadius: BorderRadius.circular(12),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Center(
-                        child: Text(
-                          artist.split(' ').map((word) => word[0]).join(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      artist,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildFeaturedSection(String title, Widget content) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.primaryColor,
-          ),
-        ),
-        const SizedBox(height: 16),
-        content,
-      ],
-    );
-  }
-
-  void _openRateMusicPage(BuildContext context, Map<String, dynamic> track) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => RateMusicPage(track: track),
-      ),
-    );
-  }
-
-  void _openArtistPage(BuildContext context, String artistName) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(artistName),
-        content: Text('$artistName sanatçısının detayları yakında eklenecek!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSearchDialog(BuildContext context) {
-    context.push('/search');
-  }
-
-  void _showNotificationsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Bildirimler'),
-        content: const Text('Bildirim ayarları yakında eklenecek!'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
-          ),
-        ],
-      ),
-    );
+  IconData _getCategoryIcon(String name) {
+    final nameLower = name.toLowerCase();
+    if (nameLower.contains('rock')) return Icons.music_note;
+    if (nameLower.contains('pop')) return Icons.star;
+    if (nameLower.contains('jazz')) return Icons.piano;
+    if (nameLower.contains('hip')) return Icons.mic;
+    if (nameLower.contains('electronic')) return Icons.equalizer;
+    if (nameLower.contains('classical')) return Icons.music_video;
+    if (nameLower.contains('country')) return Icons.landscape;
+    if (nameLower.contains('latin')) return Icons.celebration;
+    if (nameLower.contains('metal')) return Icons.bolt;
+    if (nameLower.contains('indie')) return Icons.headphones;
+    return Icons.music_note;
   }
 }
