@@ -981,6 +981,84 @@ class EnhancedSpotifyService {
     }
   }
 
+  /// Get featured playlists
+  static Future<List<Map<String, dynamic>>> getFeaturedPlaylists({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/browse/featured-playlists',
+          queryParameters: {
+            'limit': limit,
+            'offset': offset,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['playlists']?['items'] != null) {
+          final items = response.data['playlists']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching featured playlists: $e');
+      return [];
+    }
+  }
+
+  /// Get browse categories
+  static Future<List<Map<String, dynamic>>> getCategories({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/browse/categories',
+          queryParameters: {
+            'limit': limit,
+            'offset': offset,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['categories']?['items'] != null) {
+          final items = response.data['categories']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching categories: $e');
+      return [];
+    }
+  }
+
   /// Save tokens to local storage
   static Future<void> _saveTokens() async {
     final prefs = await SharedPreferences.getInstance();

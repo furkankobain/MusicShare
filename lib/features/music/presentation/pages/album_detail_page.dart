@@ -95,11 +95,11 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
 
       if (mounted) {
         setState(() {
-          _reviews = reviews;
+          _reviews = reviews.cast<Review>();
           _userReview = userReview;
           _averageRating = stats['averageRating'] ?? 0.0;
           _totalRatings = stats['totalRatings'] ?? 0;
-          _ratingDistribution = stats['distribution'] ?? {};
+          _ratingDistribution = Map<int, int>.from(stats['distribution'] ?? {});
           _loadingReviews = false;
         });
       }
@@ -520,7 +520,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
               child: Column(
                 children: [
                   // Average Rating Display
-                  if (_totalRatings > 0) ..[
+                  if (_totalRatings > 0) ...[
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -541,7 +541,7 @@ class _AlbumDetailPageState extends State<AlbumDetailPage> {
                             ),
                           ],
                         ),
-                        if (_ratingDistribution.isNotEmpty) ..[
+                        if (_ratingDistribution.isNotEmpty) ...[
                           const SizedBox(width: 32),
                           Expanded(
                             child: RatingDistribution(
