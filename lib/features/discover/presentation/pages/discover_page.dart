@@ -72,7 +72,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Keşfet', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Discover', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? ModernDesignSystem.darkSurface : ModernDesignSystem.lightSurface,
         elevation: 0,
         actions: [
@@ -92,10 +92,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
           indicatorColor: ModernDesignSystem.accentPurple,
           indicatorWeight: 3,
           tabs: const [
-            Tab(text: 'Yeni Çıkanlar'),
-            Tab(text: 'Popüler'),
-            Tab(text: 'Playlistler'),
-            Tab(text: 'Kategoriler'),
+            Tab(text: 'New Releases'),
+            Tab(text: 'Popular'),
+            Tab(text: 'Playlists'),
+            Tab(text: 'Categories'),
           ],
         ),
       ),
@@ -124,7 +124,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     if (_newReleases.isEmpty) {
       return Center(
         child: Text(
-          'Yeni çıkan albüm bulunamadı',
+          'No new releases found',
           style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
         ),
       );
@@ -166,7 +166,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     if (_topTracks.isEmpty) {
       return Center(
         child: Text(
-          'Popüler şarkı bulunamadı',
+          'No popular tracks found',
           style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
         ),
       );
@@ -187,7 +187,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     if (_featured.isEmpty) {
       return Center(
         child: Text(
-          'Öne çıkan playlist bulunamadı',
+          'No featured playlists found',
           style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600]),
         ),
       );
