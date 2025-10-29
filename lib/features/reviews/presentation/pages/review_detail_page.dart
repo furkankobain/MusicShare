@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../../shared/models/music_review.dart';
 import '../../../../shared/models/review_reply.dart';
@@ -25,6 +26,12 @@ class _ReviewDetailPageState extends ConsumerState<ReviewDetailPage> {
   String? _replyToUsername;
   String? _replyToUserId;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('tr_TR', null);
+  }
 
   @override
   void dispose() {

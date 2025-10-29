@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'dart:async';
 import '../../shared/models/conversation.dart';
 import '../../shared/models/message.dart';
@@ -42,6 +43,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _currentUserId = FirebaseBypassAuthService.currentUserId ?? '';
     _listenToTypingStatus();
     _listenToOnlineStatus();

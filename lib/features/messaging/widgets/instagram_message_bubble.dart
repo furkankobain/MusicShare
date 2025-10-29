@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/services/messaging_service.dart';
 
@@ -34,6 +35,7 @@ class _InstagramMessageBubbleState extends State<InstagramMessageBubble>
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _controller = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,

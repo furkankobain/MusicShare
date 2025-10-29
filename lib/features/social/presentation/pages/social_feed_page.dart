@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../../shared/models/activity_item.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
 
 class SocialFeedPage extends ConsumerStatefulWidget {
   const SocialFeedPage({super.key});
@@ -19,6 +21,7 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -66,33 +69,27 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
     final mockActivities = _getMockActivities();
 
     if (mockActivities.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.music_note,
-              size: 64,
-              color: isDark ? Colors.grey[700] : Colors.grey[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Henüz aktivite yok',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.grey[400] : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Müzik dinlemeye ve paylaşmaya başlayın',
-              style: TextStyle(
-                color: isDark ? Colors.grey[500] : Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
+      late String title;
+      late String description;
+      
+      switch (feedType) {
+        case 'following':
+          title = 'Kimseyi takip etmiyorsun';
+          description = 'Arkadaşlarınızı takip edin ve aktivitelerini görün';
+          break;
+        case 'popular':
+          title = 'Popüler içerik yok';
+          description = 'Daha sonra tekrar dene';
+          break;
+        default:
+          title = 'Henuz aktivite yok';
+          description = 'Müzik dinlemeye başlayın';
+      }
+      
+      return EmptyStateWidget(
+        title: title,
+        description: description,
+        icon: Icons.music_note,
       );
     }
 

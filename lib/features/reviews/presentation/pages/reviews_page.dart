@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import '../../../../shared/models/music_review.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class _ReviewsPageState extends ConsumerState<ReviewsPage> with SingleTickerProv
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _tabController = TabController(length: 3, vsync: this);
   }
 

@@ -2,12 +2,16 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../../shared/models/conversation.dart';
 import '../../shared/models/spotify_activity.dart';
 import '../../shared/services/messaging_service.dart';
 import '../../shared/services/firebase_bypass_auth_service.dart';
 import '../../shared/services/spotify_activity_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../shared/widgets/empty_state_widget.dart';
+import '../../shared/widgets/skeleton_widgets.dart';
+import '../../shared/services/error_handler_service.dart';
 import 'chat_page.dart';
 import 'user_search_page.dart';
 
@@ -21,6 +25,12 @@ class ConversationsPage extends StatefulWidget {
 class _ConversationsPageState extends State<ConversationsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    initializeDateFormatting('tr_TR', null);
+  }
 
   @override
   void dispose() {
@@ -122,11 +132,18 @@ class _ConversationsPageState extends State<ConversationsPage> {
               stream: MessagingService.getConversations(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const ListSkeleton(
+                    itemCount: 6,
+                    itemBuilder: ConversationSkeletonTile.new,
+                  );
                 }
 
                 if (snapshot.hasError) {
-                  return _buildError(isDark, snapshot.error.toString());
+                  return _buildErrorState(
+                    isDark,
+                    snapshot.error,
+                    () => _loadConversations(currentUserId!),
+                  );
                 }
 
                 final conversations = snapshot.data ?? [];
@@ -144,13 +161,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       }).toList();
 
                 if (filteredConversations.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Arama sonucu bulunamadı',
-                      style: TextStyle(
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                    ),
+                  return EmptyStateWidget(
+                    title: 'Sonuç bulunamadı',
+                    description: 'Aradığınız kullanıcı ile konuşma yok',
+                    icon: Icons.search_off,
                   );
                 }
 
@@ -374,35 +388,19 @@ class _ConversationsPageState extends State<ConversationsPage> {
   }
 
   Widget _buildEmpty(bool isDark) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.chat_bubble_outline,
-            size: 80,
-            color: isDark ? Colors.grey[600] : Colors.grey[400],
+    return EmptyStateWidget(
+      title: 'İlk mesajını gönder',
+      description: 'Arkadaşlarınızla sohbet başlatmak için + butonuna tıklayın',
+      icon: Icons.chat_bubble_outline,
+      actionButtonLabel: 'Sohbet Başlat',
+      onActionPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const UserSearchPage(),
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Henüz mesaj yok',
-            style: TextStyle(
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Yeni bir sohbet başlatmak için + butonuna bas',
-            style: TextStyle(
-              color: isDark ? Colors.grey[500] : Colors.grey[500],
-              fontSize: 14,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

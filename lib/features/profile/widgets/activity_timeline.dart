@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../../../core/theme/app_theme.dart';
 
 /// Activity timeline widget showing chronological user activities
@@ -28,6 +29,7 @@ class _ActivityTimelineState extends State<ActivityTimeline> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _loadActivities();
     _scrollController.addListener(_onScroll);
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../../shared/models/play_history.dart';
 import '../../shared/services/spotify_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -19,6 +20,7 @@ class _RecentlyPlayedPageState extends State<RecentlyPlayedPage> {
   @override
   void initState() {
     super.initState();
+    initializeDateFormatting('tr_TR', null);
     _loadRecentlyPlayed();
   }
 
