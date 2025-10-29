@@ -7,6 +7,11 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeMode>((ref) {
   return ThemeNotifier();
 });
 
+// AMOLED theme provider
+final amoledModeProvider = StateNotifierProvider<AmoledModeNotifier, bool>((ref) {
+  return AmoledModeNotifier();
+});
+
 class ThemeNotifier extends StateNotifier<ThemeMode> {
   ThemeNotifier() : super(ThemeMode.system) {
     _loadTheme();
@@ -37,6 +42,29 @@ class ThemeNotifier extends StateNotifier<ThemeMode> {
   bool get isDarkMode => state == ThemeMode.dark;
   bool get isLightMode => state == ThemeMode.light;
   bool get isSystemMode => state == ThemeMode.system;
+}
+
+class AmoledModeNotifier extends StateNotifier<bool> {
+  AmoledModeNotifier() : super(false) {
+    _loadAmoledMode();
+  }
+
+  static const String _amoledKey = 'amoled_mode';
+
+  Future<void> _loadAmoledMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getBool(_amoledKey) ?? false;
+  }
+
+  Future<void> setAmoledMode(bool enabled) async {
+    state = enabled;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_amoledKey, enabled);
+  }
+
+  void toggleAmoledMode() {
+    setAmoledMode(!state);
+  }
 }
 
 // Theme colors provider
