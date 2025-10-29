@@ -43,7 +43,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
-    initializeDateFormatting('tr_TR', null);
+    initializeDateFormatting('en_US', null);
     _currentUserId = FirebaseBypassAuthService.currentUserId ?? '';
     _listenToTypingStatus();
     _listenToOnlineStatus();
@@ -162,9 +162,9 @@ class _ChatPageState extends State<ChatPage> {
     if (difference.inDays == 0) {
       return DateFormat('HH:mm').format(timestamp);
     } else if (difference.inDays == 1) {
-      return 'Dün ${DateFormat('HH:mm').format(timestamp)}';
+      return 'Yesterday ${DateFormat('HH:mm').format(timestamp)}';
     } else if (difference.inDays < 7) {
-      return DateFormat('EEEE HH:mm', 'tr').format(timestamp);
+      return DateFormat('EEEE HH:mm', 'en_US').format(timestamp);
     } else {
       return DateFormat('dd.MM.yyyy HH:mm').format(timestamp);
     }
@@ -177,13 +177,13 @@ class _ChatPageState extends State<ChatPage> {
     
     String dateText;
     if (difference.inDays == 0) {
-      dateText = 'Bugün';
+      dateText = 'Today';
     } else if (difference.inDays == 1) {
-      dateText = 'Dün';
+      dateText = 'Yesterday';
     } else if (difference.inDays < 7) {
-      dateText = DateFormat('EEEE', 'tr').format(date);
+      dateText = DateFormat('EEEE', 'en_US').format(date);
     } else {
-      dateText = DateFormat('dd MMMM yyyy', 'tr').format(date);
+      dateText = DateFormat('dd MMMM yyyy', 'en_US').format(date);
     }
 
     return Center(
@@ -266,7 +266,7 @@ class _ChatPageState extends State<ChatPage> {
                 
                 ListTile(
                   leading: const Icon(Icons.add_reaction_outlined),
-                  title: const Text('Daha Fazla Tepki'),
+                  title: const Text('More Reactions'),
                   onTap: () {
                     Navigator.pop(context);
                     showEmojiReactionPicker(context, message.id);
@@ -274,44 +274,44 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.reply),
-                  title: const Text('Yanıtla'),
+                  title: const Text('Reply'),
                   onTap: () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
+                      const SnackBar(content: Text('Reply feature coming soon...')),
                     );
                   },
                 ),
                 ListTile(
                   leading: const Icon(Icons.copy),
-                  title: const Text('Kopyala'),
+                  title: const Text('Copy'),
                   onTap: () {
                     Clipboard.setData(ClipboardData(text: message.content));
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Mesaj kopyalandı')),
+                      const SnackBar(content: Text('Message copied')),
                     );
                   },
                 ),
                 if (isMe)
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
-                    title: const Text('Sil', style: TextStyle(color: Colors.red)),
+                    title: const Text('Delete', style: TextStyle(color: Colors.red)),
                     onTap: () async {
                       Navigator.pop(context);
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Mesajı Sil'),
-                          content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+                          title: const Text('Delete Message'),
+                          content: const Text('Are you sure you want to delete this message?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text('İptal'),
+                              child: const Text('Cancel'),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Sil', style: TextStyle(color: Colors.red)),
+                              child: const Text('Delete', style: TextStyle(color: Colors.red)),
                             ),
                           ],
                         ),
@@ -322,7 +322,7 @@ class _ChatPageState extends State<ChatPage> {
                         if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
+                              content: Text(success ? 'Message deleted' : 'Failed to delete message'),
                             ),
                           );
                         }
@@ -352,7 +352,7 @@ class _ChatPageState extends State<ChatPage> {
       // Show loading
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Resim gönderiliyor...')),
+          const SnackBar(content: Text('Uploading image...')),
         );
       }
 
@@ -375,20 +375,20 @@ class _ChatPageState extends State<ChatPage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Resim gönderildi')),
+            const SnackBar(content: Text('Image sent')),
           );
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Resim yüklenemedi')),
+            const SnackBar(content: Text('Failed to upload image')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     }
@@ -441,16 +441,16 @@ class _ChatPageState extends State<ChatPage> {
           final confirm = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Mesajı Sil'),
-              content: const Text('Bu mesajı silmek istediğinize emin misiniz?'),
+              title: const Text('Delete Message'),
+              content: const Text('Are you sure you want to delete this message?'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('İptal'),
+                  child: const Text('Cancel'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Sil', style: TextStyle(color: Colors.red)),
+                  child: const Text('Delete', style: TextStyle(color: Colors.red)),
                 ),
               ],
             ),
@@ -460,7 +460,7 @@ class _ChatPageState extends State<ChatPage> {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(success ? 'Mesaj silindi' : 'Mesaj silinemedi'),
+                  content: Text(success ? 'Message deleted' : 'Failed to delete message'),
                 ),
               );
             }
@@ -486,7 +486,7 @@ class _ChatPageState extends State<ChatPage> {
       child: Row(
         children: [
           Text(
-            '${_getOtherUserName()} yazıyor',
+            '${_getOtherUserName()} is typing',
             style: TextStyle(
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 13,
@@ -568,19 +568,19 @@ class _ChatPageState extends State<ChatPage> {
                 
                 ListTile(
                   leading: const Icon(Icons.person),
-                  title: const Text('Profili Görüntüle'),
+                  title: const Text('View Profile'),
                   onTap: () {
                     Navigator.pop(context);
                     // TODO: Navigate to user profile
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profil sayfası yakında...')),
+                      const SnackBar(content: Text('Profile page coming soon...')),
                     );
                   },
                 ),
                 
                 ListTile(
                   leading: const Icon(Icons.volume_off),
-                  title: const Text('Sustur'),
+                  title: const Text('Mute'),
                   onTap: () {
                     Navigator.pop(context);
                     _showMuteOptions(context);
@@ -589,8 +589,8 @@ class _ChatPageState extends State<ChatPage> {
                 
                 ListTile(
                   leading: const Icon(Icons.local_fire_department, color: Colors.orange),
-                  title: Text('Seri: $streak gün 🔥'),
-                  subtitle: const Text('Arka arkaya mesajlaşma günü'),
+                  title: Text('Streak: $streak days 🔥'),
+                  subtitle: const Text('Consecutive messaging days'),
                   onTap: () {
                     Navigator.pop(context);
                     _showStreakInfo(context, streak);
@@ -601,7 +601,7 @@ class _ChatPageState extends State<ChatPage> {
                 
                 ListTile(
                   leading: const Icon(Icons.block, color: Colors.red),
-                  title: const Text('Engelle & Bildir', style: TextStyle(color: Colors.red)),
+                  title: const Text('Block & Report', style: TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
                     _showBlockDialog(context, otherUserId);
@@ -636,7 +636,7 @@ class _ChatPageState extends State<ChatPage> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Ne kadar süreyle susturulsun?',
+                    'How long would you like to mute this conversation?',
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87,
                       fontSize: 16,
@@ -646,7 +646,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 
                 ListTile(
-                  title: const Text('8 Saat'),
+                  title: const Text('8 Hours'),
                   onTap: () async {
                     Navigator.pop(context);
                     await MessagingService.muteConversation(
@@ -655,14 +655,14 @@ class _ChatPageState extends State<ChatPage> {
                     );
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('8 saat süreyle susturuldu')),
+                        const SnackBar(content: Text('Muted for 8 hours')),
                       );
                     }
                   },
                 ),
                 
                 ListTile(
-                  title: const Text('1 Hafta'),
+                  title: const Text('1 Week'),
                   onTap: () async {
                     Navigator.pop(context);
                     await MessagingService.muteConversation(
@@ -671,14 +671,14 @@ class _ChatPageState extends State<ChatPage> {
                     );
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('1 hafta süreyle susturuldu')),
+                        const SnackBar(content: Text('Muted for 1 week')),
                       );
                     }
                   },
                 ),
                 
                 ListTile(
-                  title: const Text('Her Zaman'),
+                  title: const Text('Forever'),
                   onTap: () async {
                     Navigator.pop(context);
                     await MessagingService.muteConversation(
@@ -687,7 +687,7 @@ class _ChatPageState extends State<ChatPage> {
                     );
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kalıcı olarak susturuldu')),
+                        const SnackBar(content: Text('Permanently muted')),
                       );
                     }
                   },
@@ -708,7 +708,7 @@ class _ChatPageState extends State<ChatPage> {
           children: [
             Icon(Icons.local_fire_department, color: Colors.orange, size: 28),
             SizedBox(width: 8),
-            Text('Mesajlaşma Serisi'),
+            Text('Messaging Streak'),
           ],
         ),
         content: Column(
@@ -723,7 +723,7 @@ class _ChatPageState extends State<ChatPage> {
               ),
             ),
             const Text(
-              'GÜN',
+              'DAYS',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -731,13 +731,13 @@ class _ChatPageState extends State<ChatPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              '${_getOtherUserName()} ile $streak gündür arka arkaya mesajlaşıyorsunuz!',
+              'You have been messaging with ${_getOtherUserName()} for $streak consecutive days!',
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
             const Text(
-              'Her gün en az bir mesaj göndererek serinizi devam ettirin!',
+              'Keep the streak going by sending at least one message every day!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
@@ -749,7 +749,7 @@ class _ChatPageState extends State<ChatPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -760,26 +760,26 @@ class _ChatPageState extends State<ChatPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Engelle & Bildir'),
+        title: const Text('Block & Report'),
         content: Text(
-          '${_getOtherUserName()} kullanıcısını engellemek ve bildirmek istiyor musunuz?\n\n'
-          'Bu kullanıcı size artık mesaj gönderemeyecek.',
+          'Do you want to block and report ${_getOtherUserName()}?\n\n'
+          'They will no longer be able to send you messages.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement block & report
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Kullanıcı engellendi')),
+                const SnackBar(content: Text('User blocked')),
               );
             },
             child: const Text(
-              'Engelle',
+              'Block',
               style: TextStyle(color: Colors.red),
             ),
           ),
@@ -803,7 +803,7 @@ class _ChatPageState extends State<ChatPage> {
               Text(_getOtherUserName()),
             if (_isOtherUserTyping)
               Text(
-                'yazıyor...',
+                'typing...',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade600,
@@ -823,7 +823,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                   const SizedBox(width: 4),
                   const Text(
-                    'çevrimiçi',
+                    'Online',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.green,
@@ -833,7 +833,7 @@ class _ChatPageState extends State<ChatPage> {
               )
             else
               Text(
-                'çevrimdışı',
+                'Offline',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey.shade500,
@@ -897,7 +897,7 @@ class _ChatPageState extends State<ChatPage> {
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Hata: ${snapshot.error}'),
+                    child: Text('Error: ${snapshot.error}'),
                   );
                 }
 
@@ -915,7 +915,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Henüz mesaj yok',
+                          'No messages yet',
                           style: TextStyle(
                             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontSize: 16,
@@ -923,7 +923,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'İlk mesajı gönder!',
+                          'Send the first message!',
                           style: TextStyle(
                             color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                             fontSize: 14,

@@ -30,7 +30,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
   @override
   void initState() {
     super.initState();
-    initializeDateFormatting('tr_TR', null);
+    initializeDateFormatting('en_US', null);
   }
 
   @override
@@ -48,9 +48,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
     if (diff.inDays == 0) {
       return DateFormat('HH:mm').format(timestamp);
     } else if (diff.inDays == 1) {
-      return 'Dün';
+      return 'Yesterday';
     } else if (diff.inDays < 7) {
-      return DateFormat('EEEE', 'tr').format(timestamp);
+      return DateFormat('EEEE', 'en_US').format(timestamp);
     } else {
       return DateFormat('dd/MM/yyyy').format(timestamp);
     }
@@ -67,7 +67,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         title: Text(
-          'Mesajlar',
+          'Messages',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 24,
@@ -163,8 +163,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
                 if (filteredConversations.isEmpty) {
                   return EmptyStateWidget(
-                    title: 'Sonuç bulunamadı',
-                    description: 'Aradığınız kullanıcı ile konuşma yok',
+                    title: 'No Results Found',
+                    description: 'No conversations found with this user',
                     icon: Icons.search_off,
                   );
                 }
@@ -343,8 +343,8 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       Expanded(
                         child: Text(
                           isTyping
-                              ? 'yazıyor...'
-                              : conversation.lastMessage ?? 'Mesaj yok',
+                              ? 'typing...'
+                              : conversation.lastMessage ?? 'No messages',
                           style: TextStyle(
                             color: isTyping
                                 ? AppTheme.primaryColor
@@ -390,10 +390,10 @@ class _ConversationsPageState extends State<ConversationsPage> {
 
   Widget _buildEmpty(bool isDark) {
     return EmptyStateWidget(
-      title: 'İlk mesajını gönder',
-      description: 'Arkadaşlarınızla sohbet başlatmak için + butonuna tıklayın',
+      title: 'Send Your First Message',
+      description: 'Click the + button to start a chat with your friends',
       icon: Icons.chat_bubble_outline,
-      actionButtonLabel: 'Sohbet Başlat',
+      actionButtonLabel: 'Start Chat',
       onActionPressed: () {
         Navigator.push(
           context,
@@ -434,7 +434,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Giriş yapın',
+            'Sign In',
             style: TextStyle(
               color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 18,
@@ -443,7 +443,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Mesajlaşmak için giriş yapmanız gerekiyor',
+            'You need to sign in to message',
             style: TextStyle(
               color: isDark ? Colors.grey[500] : Colors.grey[500],
               fontSize: 14,
@@ -461,7 +461,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Sohbet ara...',
+          hintText: 'Search conversations...',
           prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600]),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
@@ -645,7 +645,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     title: Text(
-                      isPinned ? 'Sabitlemeyi Kaldır' : 'Sabitle',
+                      isPinned ? 'Unpin' : 'Pin',
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black87,
                       ),
@@ -656,7 +656,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(isPinned ? 'Sabitleme kaldırıldı' : 'Sohbet sabitlendi'),
+                            content: Text(isPinned ? 'Pinned removed' : 'Conversation pinned'),
                           ),
                         );
                       }
@@ -669,7 +669,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                     title: Text(
-                      isMuted ? 'Sesi Aç' : 'Sustur',
+                      isMuted ? 'Unmute' : 'Mute',
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black87,
                       ),
@@ -681,7 +681,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       } else {
                         MessagingService.unmuteConversation(conversation.id);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Sessize alma kaldırıldı')),
+                          const SnackBar(content: Text('Mute removed')),
                         );
                       }
                     },
@@ -692,7 +692,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),
                     title: const Text(
-                      'Sohbeti Sil',
+                      'Delete Conversation',
                       style: TextStyle(color: Colors.red),
                     ),
                     onTap: () async {
@@ -700,20 +700,20 @@ class _ConversationsPageState extends State<ConversationsPage> {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (context) => AlertDialog(
-                          title: const Text('Sohbeti Sil'),
+                          title: const Text('Delete Conversation'),
                           content: const Text(
-                            'Bu sohbeti silmek istediğinize emin misiniz? '
-                            'Tüm mesajlar kalıcı olarak silinecektir.',
+                            'Are you sure you want to delete this conversation? '
+                            'All messages will be permanently deleted.',
                           ),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
-                              child: const Text('İptal'),
+                              child: const Text('Cancel'),
                             ),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
                               child: const Text(
-                                'Sil',
+                                'Delete',
                                 style: TextStyle(color: Colors.red),
                               ),
                             ),
@@ -729,7 +729,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                success ? 'Sohbet silindi' : 'Sohbet silinemedi',
+                                success ? 'Conversation deleted' : 'Failed to delete conversation',
                               ),
                             ),
                           );
