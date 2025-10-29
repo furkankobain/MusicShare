@@ -34,7 +34,7 @@ class _FavoritesPageState extends State<FavoritesPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Favorilerim',
+          'My Favorites',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         bottom: TabBar(
@@ -46,10 +46,10 @@ class _FavoritesPageState extends State<FavoritesPage>
           indicatorColor: ModernDesignSystem.primaryGreen,
           indicatorWeight: 3,
           tabs: const [
-            Tab(text: 'Tümü'),
-            Tab(text: 'Şarkılar'),
-            Tab(text: 'Albümler'),
-            Tab(text: 'Sanatçılar'),
+            Tab(text: 'All'),
+            Tab(text: 'Tracks'),
+            Tab(text: 'Albums'),
+            Tab(text: 'Artists'),
           ],
         ),
       ),
@@ -75,7 +75,7 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('Hata: ${snapshot.error}'),
+            child: Text('Error: ${snapshot.error}'),
           );
         }
 
@@ -83,8 +83,8 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (favorites.isEmpty) {
           return _buildEmptyState(
-            'Henüz favori eklemediniz',
-            'Şarkı veya albümleri favorilere ekleyerek buradan kolayca erişebilirsiniz',
+            'No favorites yet',
+            'Add your favorite songs and albums to access them easily',
             isDark,
           );
         }
@@ -119,7 +119,7 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('Hata: ${snapshot.error}'),
+            child: Text('Error: ${snapshot.error}'),
           );
         }
 
@@ -127,8 +127,8 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (tracks.isEmpty) {
           return _buildEmptyState(
-            'Henüz favori şarkı eklemediniz',
-            'Beğendiğiniz şarkıları favorilere ekleyin',
+            'No favorite tracks yet',
+            'Add your favorite songs to this list',
             isDark,
           );
         }
@@ -154,7 +154,7 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (snapshot.hasError) {
           return Center(
-            child: Text('Hata: ${snapshot.error}'),
+            child: Text('Error: ${snapshot.error}'),
           );
         }
 
@@ -162,8 +162,8 @@ class _FavoritesPageState extends State<FavoritesPage>
 
         if (albums.isEmpty) {
           return _buildEmptyState(
-            'Henüz favori albüm eklemediniz',
-            'Beğendiğiniz albümleri favorilere ekleyin',
+            'No favorite albums yet',
+            'Add your favorite albums to this list',
             isDark,
           );
         }

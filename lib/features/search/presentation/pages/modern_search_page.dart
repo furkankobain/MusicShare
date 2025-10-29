@@ -152,7 +152,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         title: Text(
-          'Ara',
+          'Search',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: isDark ? Colors.white : Colors.black87,
@@ -178,10 +178,10 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
                   fontSize: 15,
                 ),
                 tabs: const [
-                  Tab(text: 'Şarkılar'),
-                  Tab(text: 'Sanatçılar'),
-                  Tab(text: 'Albümler'),
-                  Tab(text: 'Kullanıcılar'),
+                  Tab(text: 'Tracks'),
+                  Tab(text: 'Artists'),
+                  Tab(text: 'Albums'),
+                  Tab(text: 'Users'),
                 ],
               ),
             ],
