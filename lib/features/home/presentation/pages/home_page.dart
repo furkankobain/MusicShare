@@ -87,7 +87,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/create-playlist'),
         icon: const Icon(Icons.add_rounded),
-        label: const Text('Çalma Listesi'),
+        label: const Text('Playlist'),
         backgroundColor: ModernDesignSystem.primaryGreen,
         foregroundColor: Colors.white,
       ),
