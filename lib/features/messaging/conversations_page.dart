@@ -12,6 +12,7 @@ import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/empty_state_widget.dart';
 import '../../shared/widgets/skeleton_widgets.dart';
 import '../../shared/services/error_handler_service.dart';
+import '../../shared/widgets/error_state_widget.dart';
 import 'chat_page.dart';
 import 'user_search_page.dart';
 
@@ -402,6 +403,23 @@ class _ConversationsPageState extends State<ConversationsPage> {
         );
       },
     );
+  }
+
+  Widget _buildErrorState(
+    bool isDark,
+    dynamic exception,
+    VoidCallback onRetry,
+  ) {
+    return ErrorStateWidget(
+      exception: exception,
+      onRetry: onRetry,
+      showRetryButton: true,
+    );
+  }
+
+  void _loadConversations(String currentUserId) {
+    // Trigger rebuild to retry loading conversations
+    setState(() {});
   }
 
   Widget _buildNotLoggedIn(bool isDark) {

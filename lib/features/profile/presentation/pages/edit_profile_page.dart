@@ -23,6 +23,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   String? _profileImageUrl;
   bool _isLoading = false;
   bool _isUploadingImage = false;
+  bool _isProfilePrivate = false;
 
   @override
   void initState() {
@@ -59,6 +60,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
           _linkController.text = data['link'] ?? '';
           _locationController.text = data['location'] ?? '';
           _profileImageUrl = data['photoURL'];
+          _isProfilePrivate = data['isPrivate'] ?? false;
         });
       }
     } catch (e) {
@@ -133,6 +135,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
         'bio': _bioController.text.trim(),
         'link': _linkController.text.trim(),
         'location': _locationController.text.trim(),
+        'isPrivate': _isProfilePrivate,
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -315,7 +318,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                       icon: Icons.notes,
                       hint: 'Müzik zevkinizi anlatın...',
                       maxLines: 4,
-                      maxLength: 150,
+                      maxLength: 250,
                       isDark: isDark,
                     ),
 
@@ -344,6 +347,55 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
                     const SizedBox(height: 32),
 
+                    // Privacy Settings
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey[850] : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDark ? Colors.grey[800]! : Colors.grey[300]!,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Özel Profil',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Profiliniz sadece takip ettiğiniz kişilere görünür olur',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _isProfilePrivate,
+                            onChanged: (value) {
+                              setState(() => _isProfilePrivate = value);
+                            },
+                            activeColor: AppTheme.primaryColor,
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
                     // Info Card
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -364,7 +416,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Profiliniz herkese açık olacaktır. Kişisel bilgilerinizi paylaşırken dikkatli olun.',
+                              'Profil bilgilerinizi düzenledikten sonra kaydettikten sonra değişiklikler uygulanacaktır.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark ? Colors.grey[300] : Colors.grey[700],
