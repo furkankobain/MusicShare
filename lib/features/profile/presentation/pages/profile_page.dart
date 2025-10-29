@@ -19,7 +19,7 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil'),
+        title: const Text('Profile'),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -86,7 +86,7 @@ class ProfilePage extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: AppConstants.defaultPadding),
               child: Column(
                 children: [
-                  _buildMenuSection(context, 'Kütüphane', [
+                  _buildMenuSection(context, 'Library', [
                     _buildMenuItem(
                       context,
                       icon: Icons.favorite,
@@ -104,7 +104,7 @@ class ProfilePage extends ConsumerWidget {
                     _buildMenuItem(
                       context,
                       icon: Icons.playlist_play,
-                      title: 'Çalma Listeleri',
+                      title: 'Playlists',
                       subtitle: '12 playlists',
                       onTap: () {},
                     ),
@@ -112,7 +112,7 @@ class ProfilePage extends ConsumerWidget {
                   
                   const SizedBox(height: 24),
                   
-                  _buildMenuSection(context, 'Aktivite', [
+                  _buildMenuSection(context, 'Activity', [
                     _buildMenuItem(
                       context,
                       icon: Icons.history,
@@ -123,8 +123,8 @@ class ProfilePage extends ConsumerWidget {
                     _buildMenuItem(
                       context,
                       icon: Icons.star,
-                      title: 'Puanlamalarım',
-                      subtitle: 'Tüm müzik puanlamalarınız',
+                      title: 'My Ratings',
+                      subtitle: 'All your music ratings',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -135,33 +135,33 @@ class ProfilePage extends ConsumerWidget {
       _buildMenuItem(
         context,
         icon: Icons.analytics,
-        title: 'İstatistiklerim',
-        subtitle: 'Dinleme istatistiklerinizi görün',
+        title: 'My Statistics',
+        subtitle: 'View your listening statistics',
         onTap: () => Navigator.pushNamed(context, '/statistics'),
       ),
       _buildMenuItem(
         context,
         icon: Icons.settings,
-        title: 'Ayarlar',
-        subtitle: 'Uygulama ayarlarını yönetin',
+        title: 'Settings',
+        subtitle: 'Manage app settings',
         onTap: () => Navigator.pushNamed(context, '/settings'),
       ),
                   ]),
                   
                   const SizedBox(height: 24),
                   
-                  _buildMenuSection(context, 'Sosyal', [
+                  _buildMenuSection(context, 'Social', [
                     _buildMenuItem(
                       context,
                       icon: Icons.people,
-                      title: 'Takip Edilenler',
+                      title: 'Following',
                       subtitle: '45 friends',
                       onTap: () {},
                     ),
                     _buildMenuItem(
                       context,
                       icon: Icons.group,
-                      title: 'Takipçiler',
+                      title: 'Followers',
                       subtitle: '128 followers',
                       onTap: () {},
                     ),
@@ -176,12 +176,12 @@ class ProfilePage extends ConsumerWidget {
                   
                   const SizedBox(height: 24),
                   
-                  _buildMenuSection(context, 'Ayarlar', [
+                  _buildMenuSection(context, 'Settings', [
                     _buildMenuItem(
                       context,
                       icon: Icons.notifications,
-                      title: 'Bildirimler',
-                      subtitle: 'Bildirim ayarlarınızı yönetin',
+                      title: 'Notifications',
+                      subtitle: 'Manage your notifications',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(

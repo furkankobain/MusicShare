@@ -257,7 +257,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hoş Geldiniz!',
+                      'Welcome Back!',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -266,7 +266,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Yeni keşifler için hazır mısınız?',
+                      'Ready for new discoveries?',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.white,
@@ -294,7 +294,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             context,
             isDark: isDark,
             icon: Icons.music_note_rounded,
-            title: 'Şarkılar',
+            title: 'Tracks',
             value: tracks.toString(),
             gradient: ModernDesignSystem.primaryGradient,
             onTap: () => context.push('/favorites'),
@@ -306,7 +306,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             context,
             isDark: isDark,
             icon: Icons.album_rounded,
-            title: 'Albümler',
+            title: 'Albums',
             value: albums.toString(),
             gradient: ModernDesignSystem.blueGradient,
             onTap: () => context.push('/favorites'),
@@ -318,7 +318,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             context,
             isDark: isDark,
             icon: Icons.favorite_rounded,
-            title: 'Favoriler',
+            title: 'Favorites',
             value: totalFavorites.toString(),
             gradient: ModernDesignSystem.sunsetGradient,
             onTap: () => context.push('/favorites'),
@@ -353,7 +353,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Yeni Çıkanlar',
+                    'New Releases',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -367,7 +367,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: TextButton.styleFrom(
                   foregroundColor: ModernDesignSystem.primaryGreen,
                 ),
-                child: const Text('Tümü'),
+                child: const Text('All'),
               ),
             ],
           ),
@@ -379,7 +379,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             height: 200,
             alignment: Alignment.center,
             child: Text(
-              'Yeni çıkan albüm bulunamadı',
+              'No new releases found',
               style: TextStyle(
                 color: isDark ? Colors.grey[500] : Colors.grey[600],
               ),
@@ -431,7 +431,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Öne Çıkan Playlistler',
+                    'Featured Playlists',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -445,7 +445,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: TextButton.styleFrom(
                   foregroundColor: ModernDesignSystem.primaryGreen,
                 ),
-                child: const Text('Tümü'),
+                child: const Text('All'),
               ),
             ],
           ),
@@ -468,7 +468,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             height: 200,
             alignment: Alignment.center,
             child: Text(
-              'Öne çıkan playlist bulunamadı',
+              'No featured playlists found',
               style: TextStyle(
                 color: isDark ? Colors.grey[500] : Colors.grey[600],
               ),
@@ -584,7 +584,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Son Aktiviteler',
+                'Recent Activity',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
