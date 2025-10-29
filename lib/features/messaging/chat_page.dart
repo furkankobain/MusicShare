@@ -173,6 +173,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildDateSeparator(DateTime date) {
     final now = DateTime.now();
     final difference = now.difference(date);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     String dateText;
     if (difference.inDays == 0) {
@@ -190,13 +191,13 @@ class _ChatPageState extends State<ChatPage> {
         margin: const EdgeInsets.symmetric(vertical: 16),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
           dateText,
           style: TextStyle(
-            color: Colors.grey.shade700,
+            color: isDark ? Colors.grey.shade300 : Colors.grey.shade700,
             fontSize: 12,
             fontWeight: FontWeight.w500,
           ),
@@ -206,14 +207,15 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   void _showMessageActions(Message message, bool isMe) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[900] : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: SafeArea(
             child: Column(
@@ -225,7 +227,7 @@ class _ChatPageState extends State<ChatPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: isDark ? Colors.grey.shade700 : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -248,7 +250,7 @@ class _ChatPageState extends State<ChatPage> {
                           width: 50,
                           height: 50,
                           decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
+                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade100,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -260,7 +262,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 
-                const Divider(height: 1),
+                Divider(height: 1, color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                 
                 ListTile(
                   leading: const Icon(Icons.add_reaction_outlined),
@@ -477,6 +479,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildTypingIndicator() {
     if (!_isOtherUserTyping) return const SizedBox.shrink();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -485,7 +488,7 @@ class _ChatPageState extends State<ChatPage> {
           Text(
             '${_getOtherUserName()} yazıyor',
             style: TextStyle(
-              color: Colors.grey.shade600,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               fontSize: 13,
               fontStyle: FontStyle.italic,
             ),
@@ -506,7 +509,7 @@ class _ChatPageState extends State<ChatPage> {
                       width: 4,
                       height: 4 + (value * 4),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade500,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade500,
                         shape: BoxShape.circle,
                       ),
                     );
@@ -788,6 +791,7 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final streak = _calculateStreak();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
       appBar: AppBar(
@@ -907,13 +911,13 @@ class _ChatPageState extends State<ChatPage> {
                         Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
-                          color: Colors.grey.shade400,
+                          color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Henüz mesaj yok',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                             fontSize: 16,
                           ),
                         ),
@@ -921,7 +925,7 @@ class _ChatPageState extends State<ChatPage> {
                         Text(
                           'İlk mesajı gönder!',
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
                             fontSize: 14,
                           ),
                         ),
@@ -984,10 +988,10 @@ class _ChatPageState extends State<ChatPage> {
           // Message Input
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? Colors.grey[900] : Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.shade300,
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
                   offset: const Offset(0, -1),
                   blurRadius: 4,
                 ),

@@ -687,7 +687,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     },
                   ),
                   
-                  const Divider(height: 1),
+                  Divider(height: 1, color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
                   
                   ListTile(
                     leading: const Icon(Icons.delete, color: Colors.red),

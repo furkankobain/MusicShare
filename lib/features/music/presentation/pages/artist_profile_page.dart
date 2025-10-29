@@ -450,15 +450,20 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
               child: Center(child: CircularProgressIndicator()),
             )
           else
-            SliverFillRemaining(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAboutTab(isDark),
-                  _buildTopTracks(isDark),
-                  _buildAlbums(isDark),
-                ],
-              ),
+            SliverList(
+              delegate: SliverChildListDelegate([
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.8,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildAboutTab(isDark),
+                      _buildTopTracks(isDark),
+                      _buildAlbums(isDark),
+                    ],
+                  ),
+                ),
+              ]),
             ),
         ],
       ),
