@@ -56,8 +56,8 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
         SnackBar(
           content: Text(
             _isFavorite
-                ? 'Favorilere eklendi'
-                : 'Favorilerden kaldırıldı',
+                ? 'Added to favorites'
+                : 'Removed from favorites',
           ),
           duration: const Duration(seconds: 2),
         ),
@@ -312,7 +312,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${_formatFollowers(followers)} takipçi',
+                                '${_formatFollowers(followers)} followers',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.8),
                                   fontSize: ModernDesignSystem.fontSizeS,
@@ -339,7 +339,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Popülerlik: $popularity/100',
+                                    'Popularity: $popularity/100',
                                     style: TextStyle(
                                       color: Colors.white.withValues(alpha: 0.8),
                                       fontSize: ModernDesignSystem.fontSizeS,
@@ -435,9 +435,9 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                   fontWeight: FontWeight.bold,
                 ),
                 tabs: const [
-                  Tab(text: 'Hakkında'),
-                  Tab(text: 'Popüler Şarkılar'),
-                  Tab(text: 'Diskografi'),
+                  Tab(text: 'About'),
+                  Tab(text: 'Popular Tracks'),
+                  Tab(text: 'Discography'),
                 ],
               ),
               isDark,
@@ -493,7 +493,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
             if (_lastFmInfo!['bio'] is Map && 
                 (_lastFmInfo!['bio'] as Map)['content'] != null) ...[
               Text(
-                'Hakkında',
+                'About',
                 style: TextStyle(
                   fontSize: ModernDesignSystem.fontSizeXL,
                   fontWeight: FontWeight.bold,
@@ -518,7 +518,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
           // Similar Artists Section
           if (_similarArtists.isNotEmpty) ...[
             Text(
-              'Benzer Sanatçılar',
+              'Similar Artists',
               style: TextStyle(
                 fontSize: ModernDesignSystem.fontSizeXL,
                 fontWeight: FontWeight.bold,
@@ -559,7 +559,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Bilgi bulunamadı',
+                    'No information available',
                     style: TextStyle(
                       color: Colors.grey.withValues(alpha: 0.7),
                       fontSize: ModernDesignSystem.fontSizeM,
@@ -593,7 +593,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
         // Note: We need the full artist object with ID for Spotify
         // For now, just show a message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$artistName profili yükleniyor...')),
+          SnackBar(content: Text('Loading $artistName profile...')),
         );
       },
       child: Column(
@@ -673,7 +673,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
             ),
             const SizedBox(height: 16),
             Text(
-              'Şarkı bulunamadı',
+              'No tracks found',
               style: TextStyle(
                 color: Colors.grey.withValues(alpha: 0.7),
                 fontSize: ModernDesignSystem.fontSizeM,
@@ -842,7 +842,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
             ),
             const SizedBox(height: 16),
             Text(
-              'Albüm bulunamadı',
+              'No albums found',
               style: TextStyle(
                 color: Colors.grey.withValues(alpha: 0.7),
                 fontSize: ModernDesignSystem.fontSizeM,

@@ -104,14 +104,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profil fotoğrafı güncellendi')),
+            const SnackBar(content: Text('Profile photo updated')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hata: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     } finally {
@@ -127,7 +127,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     try {
       final userId = FirebaseBypassAuthService.currentUserId;
       if (userId == null) {
-        throw Exception('Kullanıcı oturumu bulunamadı');
+        throw Exception('User session not found');
       }
 
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
@@ -142,7 +142,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Profil başarıyla güncellendi'),
+            content: Text('Profile updated successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -152,7 +152,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: $e'),
+            content: Text('Error: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -169,7 +169,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     return Scaffold(
       backgroundColor: isDark ? AppTheme.backgroundColor : Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Profili Düzenle'),
+        title: const Text('Edit Profile'),
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         actions: [
@@ -182,7 +182,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    'Kaydet',
+                    'Save',
                     style: TextStyle(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.bold,
