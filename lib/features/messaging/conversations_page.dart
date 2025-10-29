@@ -10,7 +10,7 @@ import '../../shared/services/firebase_bypass_auth_service.dart';
 import '../../shared/services/spotify_activity_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../shared/widgets/empty_state_widget.dart';
-import '../../shared/widgets/skeleton_widgets.dart';
+import '../../shared/widgets/skeleton_widgets.dart' as skeleton_widgets;
 import '../../shared/services/error_handler_service.dart';
 import '../../shared/widgets/error_state_widget.dart';
 import 'chat_page.dart';
@@ -133,9 +133,9 @@ class _ConversationsPageState extends State<ConversationsPage> {
               stream: MessagingService.getConversations(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const ListSkeleton(
+                  return skeleton_widgets.ListSkeleton(
                     itemCount: 6,
-                    itemBuilder: ConversationSkeletonTile.new,
+                    itemBuilder: (context) => const skeleton_widgets.ConversationSkeletonTile(),
                   );
                 }
 
