@@ -52,7 +52,7 @@ class TimelineFeedWidget extends StatelessWidget {
     final albumCover = post['albumCover'] as String?;
     final title = post['title'] as String? ?? 'Unknown Track';
     final artist = post['artist'] as String? ?? 'Unknown Artist';
-    final type = post['type'] as String? ?? 'Album';
+    final type = post['albumType'] as String? ?? 'Album';
     final review = post['review'] as String? ?? '';
     final rating = post['rating'] as double? ?? 0.0;
     final userAvatar = post['userAvatar'] as String?;

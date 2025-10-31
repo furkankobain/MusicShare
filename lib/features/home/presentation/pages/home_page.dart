@@ -24,10 +24,13 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _newReleases = [];
+  List<Map<String, dynamic>> _popularReleases = [];
   List<Map<String, dynamic>> _timelinePosts = [];
   Map<String, int> _favoriteCounts = {};
   final _scrollController = ScrollController();
   double _scrollOffset = 0.0;
+  String _releaseViewMode = 'popular'; // 'popular' or 'new'
+  String _timelineViewMode = 'popular'; // 'popular' or 'friends'
 
   @override
   void initState() {
@@ -52,8 +55,9 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() => _isLoading = true);
 
     try {
-      // Load Spotify data
-      final releases = await EnhancedSpotifyService.getNewReleases(limit: 6);
+      // Load Spotify data - both new releases and global popular
+      final newReleases = await EnhancedSpotifyService.getNewReleases(limit: 10);
+      final popularReleases = await EnhancedSpotifyService.getGlobalPopularTracks(limit: 10);
 
       // Load favorites count
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -67,7 +71,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       if (mounted) {
         setState(() {
-          _newReleases = releases;
+          _newReleases = newReleases;
+          _popularReleases = popularReleases;
           _timelinePosts = posts;
           _favoriteCounts = counts;
           _isLoading = false;
@@ -86,21 +91,43 @@ class _HomePageState extends ConsumerState<HomePage> {
       {
         'title': 'Thriller',
         'artist': 'Michael Jackson',
-        'type': 'Album',
+        'albumType': 'Album',
+        'type': 'popular',
         'review': 'Why Michael Jackson will always be the GOAT!!!',
         'rating': 5.0,
         'userName': 'MusicLover92',
         'reviewBody':
-            'I know this review is out a month before its next anniversary, but let me cook. Back in middle school, I was really obsessed with Michael Jackson. I was even trying to mimic him, and it was corny as hell...',
+            'I know this review is out a month before its next anniversary, but let me cook. Back in middle school, I was really obsessed with Michael Jackson.',
       },
       {
         'title': 'Hotel California',
         'artist': 'Eagles',
-        'type': 'Album',
+        'albumType': 'Album',
+        'type': 'friends',
         'review': 'A masterpiece of rock music',
         'rating': 5.0,
         'userName': 'RockFan',
         'reviewBody': 'This album is timeless. Every track is perfect and the production is amazing.',
+      },
+      {
+        'title': 'Dark Side of the Moon',
+        'artist': 'Pink Floyd',
+        'albumType': 'Album',
+        'type': 'popular',
+        'review': 'Progressive rock at its finest',
+        'rating': 5.0,
+        'userName': 'ProgressiveLover',
+        'reviewBody': 'One of the greatest albums ever made. Timeless masterpiece.',
+      },
+      {
+        'title': 'Abbey Road',
+        'artist': 'The Beatles',
+        'albumType': 'Album',
+        'type': 'friends',
+        'review': 'The Beatles perfection',
+        'rating': 5.0,
+        'userName': 'BeatlesFan',
+        'reviewBody': 'Every song on this album is incredible. Come Together is amazing!',
       },
     ];
   }
@@ -121,66 +148,19 @@ class _HomePageState extends ConsumerState<HomePage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark 
-                    ? Colors.black.withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.7),
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark 
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.black.withValues(alpha: 0.1),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: ShaderMask(
-          shaderCallback: (bounds) => ModernDesignSystem.modernGradient.createShader(bounds),
-          child: const Text(
-            'MusicShare',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-              color: Colors.white,
-            ),
+        title: const Text(
+          'Tuniverse',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+            color: Colors.white,
           ),
         ),
         actions: [
           IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ModernDesignSystem.primaryGreen.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.search, size: 20),
-            ),
-            onPressed: () {
-              // TODO: Implement search
-            },
+            icon: const Icon(Icons.person),
+            onPressed: () {},
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ModernDesignSystem.accentPink.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.notifications_outlined, size: 20),
-            ),
-            onPressed: () {
-              // TODO: Implement notifications
-            },
-          ),
-          const SizedBox(width: 12),
         ],
       ),
       body: Container(
@@ -209,22 +189,202 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome Section
-                _buildModernWelcomeSection(context, isDark),
+                // Popular/New Toggle Section
+                _buildReleasesToggleSection(context, isDark),
+                const SizedBox(height: 16),
+                // Popular or New Releases
+                _buildReleasesView(context, isDark),
                 const SizedBox(height: 24),
-                // Quick Stats
-                _buildModernQuickStats(context, isDark),
-                const SizedBox(height: 24),
-                // Hot New Releases
-                _buildNewReleases(context, isDark),
-                const SizedBox(height: 24),
-                // Timeline Feed
-                _buildTimelineSection(context, isDark),
+                // Discover/Friends Toggle Section
+                _buildDiscoverToggleSection(context, isDark),
+                const SizedBox(height: 16),
+                // Discover Feed
+                _buildDiscoverView(context, isDark),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildReleasesToggleSection(BuildContext context, bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (_releaseViewMode == 'popular')
+          Text(
+            'Popular This Week',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
+            ),
+          )
+        else
+          Text(
+            'Hot New Releases',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
+            ),
+          ),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _releaseViewMode = 'popular'),
+              child: Text(
+                'POPULAR',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _releaseViewMode == 'popular'
+                      ? ModernDesignSystem.primaryGreen
+                      : Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('/', style: TextStyle(color: Colors.grey)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => setState(() => _releaseViewMode = 'new'),
+              child: Text(
+                'NEW',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _releaseViewMode == 'new'
+                      ? ModernDesignSystem.primaryGreen
+                      : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReleasesView(BuildContext context, bool isDark) {
+    final data = _releaseViewMode == 'popular' ? _popularReleases : _newReleases;
+    
+    if (_isLoading) {
+      return const HorizontalScrollSkeleton(height: 220, itemCount: 3);
+    }
+
+    if (data.isEmpty) {
+      return Container(
+        height: 200,
+        alignment: Alignment.center,
+        child: Text(
+          'No releases found',
+          style: TextStyle(
+            color: isDark ? Colors.grey[500] : Colors.grey[600],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: data.length,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 160,
+                margin: EdgeInsets.only(
+                  right: index < data.length - 1 ? 12 : 0,
+                ),
+                child: HorizontalAlbumCard(album: data[index]),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: ModernDesignSystem.primaryGreen.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: GestureDetector(
+            onTap: () => context.push('/discover'),
+            child: const Text(
+              'View Full List',
+              style: TextStyle(
+                color: ModernDesignSystem.primaryGreen,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiscoverToggleSection(BuildContext context, bool isDark) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Discover',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
+          ),
+        ),
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => setState(() => _timelineViewMode = 'popular'),
+              child: Text(
+                'POPULAR',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _timelineViewMode == 'popular'
+                      ? ModernDesignSystem.primaryGreen
+                      : Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('/', style: TextStyle(color: Colors.grey)),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => setState(() => _timelineViewMode = 'friends'),
+              child: Text(
+                'FRIENDS',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: _timelineViewMode == 'friends'
+                      ? ModernDesignSystem.primaryGreen
+                      : Colors.grey,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDiscoverView(BuildContext context, bool isDark) {
+    // Filter posts based on mode
+    final posts = _timelineViewMode == 'popular'
+        ? _timelinePosts.where((p) => p['type'] == 'popular').toList()
+        : _timelinePosts.where((p) => p['type'] == 'friends').toList();
+
+    return TimelineFeedWidget(
+      posts: posts.isEmpty ? _timelinePosts : posts,
+      isLoading: _isLoading,
     );
   }
 
