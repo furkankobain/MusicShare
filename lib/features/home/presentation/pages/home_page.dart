@@ -138,18 +138,17 @@ class _HomePageState extends ConsumerState<HomePage> {
     
     return Scaffold(
       extendBodyBehindAppBar: true,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => context.push('/create-playlist'),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Playlist'),
-        backgroundColor: ModernDesignSystem.primaryGreen,
+        backgroundColor: const Color(0xFF5A5AFF),
         foregroundColor: Colors.white,
+        child: const Icon(Icons.add_rounded),
       ),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: const Text(
-          'Tuniverse',
+          'Musicboard',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 24,
@@ -158,7 +157,11 @@ class _HomePageState extends ConsumerState<HomePage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person),
+            icon: const Icon(Icons.group),
+            onPressed: () {},
+          ),
+          IconButton(
+            icon: const Icon(Icons.history),
             onPressed: () {},
           ),
         ],
@@ -189,17 +192,46 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // TEST TEXT
+                // What have you been listening to?
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.all(16),
-                  color: Colors.red,
-                  child: const Text(
-                    'TEST - CHANGES ARE WORKING',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[700],
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'What have you been listening to?',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -209,10 +241,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                 // Popular or New Releases
                 _buildReleasesView(context, isDark),
                 const SizedBox(height: 24),
-                // Discover/Friends Toggle Section
+                // Timeline/Discover Toggle Section
                 _buildDiscoverToggleSection(context, isDark),
                 const SizedBox(height: 16),
-                // Discover Feed
+                // Timeline Feed
                 _buildDiscoverView(context, isDark),
               ],
             ),
@@ -254,7 +286,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: _releaseViewMode == 'popular'
-                      ? ModernDesignSystem.primaryGreen
+                      ? const Color(0xFF5A9FFF)
                       : Colors.grey,
                 ),
               ),
@@ -270,7 +302,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: _releaseViewMode == 'new'
-                      ? ModernDesignSystem.primaryGreen
+                      ? const Color(0xFF5A9FFF)
                       : Colors.grey,
                 ),
               ),
@@ -323,7 +355,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: ModernDesignSystem.primaryGreen.withValues(alpha: 0.1),
+            color: const Color(0xFF5A9FFF).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
           ),
           child: GestureDetector(
@@ -331,7 +363,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: const Text(
               'View Full List',
               style: TextStyle(
-                color: ModernDesignSystem.primaryGreen,
+                color: Color(0xFF5A9FFF),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -346,7 +378,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Discover',
+          'Timeline',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -363,7 +395,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: _timelineViewMode == 'popular'
-                      ? ModernDesignSystem.primaryGreen
+                      ? const Color(0xFF5A9FFF)
                       : Colors.grey,
                 ),
               ),
@@ -379,7 +411,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                   color: _timelineViewMode == 'friends'
-                      ? ModernDesignSystem.primaryGreen
+                      ? const Color(0xFF5A9FFF)
                       : Colors.grey,
                 ),
               ),

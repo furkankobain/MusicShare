@@ -120,142 +120,304 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
               snap: true,
               elevation: 0,
               backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-              title: Row(
-                children: [
-                  Icon(
-                    Icons.music_note_rounded,
-                    color: AppTheme.primaryColor,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    AppConstants.appName,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ],
+              title: const Text(
+                'Musicboard',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  color: Colors.white,
+                ),
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () {
-                    context.push('/search');
-                  },
+                  icon: const Icon(Icons.group),
+                  onPressed: () {},
                 ),
                 IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () {
-                    // TODO: Notifications
-                  },
+                  icon: const Icon(Icons.history),
+                  onPressed: () {},
                 ),
               ],
             ),
-            // Tab Bar - Letterboxd Style
-            SliverPersistentHeader(
-              pinned: true,
-              delegate: _StickyTabBarDelegate(
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: false,
-                  indicatorColor: AppTheme.primaryColor,
-                  indicatorWeight: 3,
-                  labelColor: AppTheme.primaryColor,
-                  unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
-                  labelStyle: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
-                  tabs: _tabs.map((tab) => Tab(text: tab)).toList(),
-                ),
-                isDark,
-              ),
-            ),
+            // Tab Bar removed - no tabs needed for main content
           ];
         },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildSongsTab(isDark),
-            const ReviewsPage(),
-            const AlbumsPage(),
-            const EnhancedDiscoverPage(),
-          ],
+        body: RefreshIndicator(
+          onRefresh: _loadTurkeyData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // What have you been listening to?
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[700],
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[900],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Text(
+                            'What have you been listening to?',
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Hot New Releases Section
+                _buildHotNewReleasesSection(isDark),
+                const SizedBox(height: 24),
+                // Timeline Section
+                _buildTimelineSection(isDark),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // ŞARKILAR TAB - İlk sekme
-  Widget _buildSongsTab(bool isDark) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        await Future.delayed(const Duration(seconds: 1));
-      },
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  // HOT NEW RELEASES SECTION
+  Widget _buildHotNewReleasesSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Son Dinlenenler
-            _buildSectionHeader(
-              'Son Dinlenenler',
-              isDark,
-              onSeeAll: () {
-                context.push('/recently-played');
-              },
+            const Text(
+              'Hot New Releases',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
-            const SizedBox(height: 12),
-            _buildRecentlyPlayedSection(isDark),
-            
-            const SizedBox(height: 32),
-            
-            // Haftanın Popüler Şarkıları
-            _buildSectionHeader(
-              'Haftanın Popüler Şarkıları',
-              isDark,
-              onSeeAll: () {
-                context.push('/turkey-top-tracks');
-              },
+            Row(
+              children: [
+                const Text(
+                  'POPULAR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5A9FFF),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('/', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(width: 8),
+                Text(
+                  'NEW',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            _buildPopularSongsSection(isDark),
-            
-            const SizedBox(height: 32),
-            
-            // Takip Ettiğim Kişilerin Aktiviteleri
-            _buildSectionHeader(
-              'Takip Ettiğim Kişiler',
-              isDark,
-              onSeeAll: () {
-                context.push('/feed');
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildFollowingActivitiesSection(isDark),
-            
-            const SizedBox(height: 32),
-            
-            // Popüler Albümler
-            _buildSectionHeader(
-              'Türkiye\'de Popüler Albümler',
-              isDark,
-              onSeeAll: () {
-                context.push('/turkey-top-albums');
-              },
-            ),
-            const SizedBox(height: 12),
-            _buildPopularAlbumsSection(isDark),
-            
-            const SizedBox(height: 16),
           ],
         ),
+        const SizedBox(height: 16),
+        _buildPopularSongsSection(isDark),
+      ],
+    );
+  }
+  
+  // TIMELINE SECTION
+  Widget _buildTimelineSection(bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Timeline',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            Row(
+              children: [
+                const Text(
+                  'POPULAR',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF5A9FFF),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('/', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const SizedBox(width: 8),
+                Text(
+                  'FRIENDS',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        _buildTimelineContent(isDark),
+      ],
+    );
+  }
+  
+  // TIMELINE CONTENT
+  Widget _buildTimelineContent(bool isDark) {
+    // Mock timeline posts
+    final posts = [
+      {
+        'title': 'Thriller',
+        'artist': 'Michael Jackson',
+        'albumType': 'Album',
+        'review': 'Why Michael Jackson will always be the GOAT!!!',
+        'rating': 5.0,
+        'reviewBody':
+            'I know this review is out a month before its next anniversary, but let me cook. Back in middle school, I was really obsessed with Michael Jackson.',
+      },
+    ];
+    
+    return Column(
+      children: [
+        for (var post in posts)
+          _buildTimelinePost(post, isDark),
+      ],
+    );
+  }
+  
+  // TIMELINE POST CARD
+  Widget _buildTimelinePost(Map<String, dynamic> post, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Album info with play button
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[700],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.music_note, color: Colors.grey),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post['title'] ?? '',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${post['artist']} • ${post['albumType']}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Review title
+          Text(
+            post['review'] ?? '',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Rating
+          Row(
+            children: [
+              for (int i = 0; i < 5; i++)
+                const Icon(Icons.star, color: Colors.amber, size: 16),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Review body
+          Text(
+            post['reviewBody'] ?? '',
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 13,
+              height: 1.5,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -291,7 +453,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Tümü',
+                    'View All',
                     style: TextStyle(
                       color: AppTheme.primaryColor,
                       fontWeight: FontWeight.w600,
