@@ -28,6 +28,8 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   bool _isLoadingTracks = true;
   bool _isLoadingAlbums = true;
   bool _isLoadingRecent = true;
+  String _releasesViewMode = 'new'; // 'popular' or 'new'
+  String _timelineViewMode = 'popular'; // 'popular' or 'friends'
 
   final List<String> _tabs = ['Popular This Week', 'New Releases', 'Discover', 'Profile'];
 
@@ -209,9 +211,9 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Hot New Releases',
-              style: TextStyle(
+            Text(
+              _releasesViewMode == 'new' ? 'Hot New Releases' : 'Popular This Week',
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -219,23 +221,33 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             ),
             Row(
               children: [
-                const Text(
-                  'POPULAR',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF5A9FFF),
+                GestureDetector(
+                  onTap: () => setState(() => _releasesViewMode = 'popular'),
+                  child: Text(
+                    'POPULAR',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _releasesViewMode == 'popular'
+                          ? const Color(0xFFFF5E5E)
+                          : Colors.grey,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 const Text('/', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(width: 8),
-                Text(
-                  'NEW',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                GestureDetector(
+                  onTap: () => setState(() => _releasesViewMode = 'new'),
+                  child: Text(
+                    'NEW',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _releasesViewMode == 'new'
+                          ? const Color(0xFFFF5E5E)
+                          : Colors.grey,
+                    ),
                   ),
                 ),
               ],
@@ -266,23 +278,33 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             ),
             Row(
               children: [
-                const Text(
-                  'POPULAR',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF5A9FFF),
+                GestureDetector(
+                  onTap: () => setState(() => _timelineViewMode = 'popular'),
+                  child: Text(
+                    'POPULAR',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _timelineViewMode == 'popular'
+                          ? const Color(0xFFFF5E5E)
+                          : Colors.grey,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
                 const Text('/', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 const SizedBox(width: 8),
-                Text(
-                  'FRIENDS',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                GestureDetector(
+                  onTap: () => setState(() => _timelineViewMode = 'friends'),
+                  child: Text(
+                    'FRIENDS',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _timelineViewMode == 'friends'
+                          ? const Color(0xFFFF5E5E)
+                          : Colors.grey,
+                    ),
                   ),
                 ),
               ],
