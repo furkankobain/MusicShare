@@ -29,7 +29,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   bool _isLoadingAlbums = true;
   bool _isLoadingRecent = true;
 
-  final List<String> _tabs = ['Şarkılar', 'Reviews', 'Albümler', 'Aktivite'];
+  final List<String> _tabs = ['Popular This Week', 'New Releases', 'Discover', 'Profile'];
 
   @override
   void initState() {

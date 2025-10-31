@@ -189,6 +189,20 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // TEST TEXT
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.red,
+                  child: const Text(
+                    'TEST - CHANGES ARE WORKING',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
                 // Popular/New Toggle Section
                 _buildReleasesToggleSection(context, isDark),
                 const SizedBox(height: 16),
