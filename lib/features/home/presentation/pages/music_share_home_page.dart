@@ -152,41 +152,50 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // What have you been listening to?
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[700],
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.grey[900],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Text(
-                            'What have you been listening to?',
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
+                GestureDetector(
+                  onTap: () => context.push('/search'),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            // Navigate to home with profile tab
+                            context.go('/profile-tab');
+                          },
+                          child: Container(
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[700],
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.white,
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[900],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text(
+                              'What have you been listening to?',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -531,7 +540,6 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             track['name'] ?? 'Unknown Track',
             artistName,
             isDark,
-            rankBadge: '${index + 1}',
             imageUrl: imageUrl,
           );
         },
@@ -601,7 +609,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
   }
 
   // Şarkı Kartı
-  Widget _buildSongCard(Map<String, dynamic> track, String title, String artist, bool isDark, {String? rankBadge, String? imageUrl}) {
+  Widget _buildSongCard(Map<String, dynamic> track, String title, String artist, bool isDark, {String? imageUrl}) {
     return GestureDetector(
       onTap: () {
         context.push('/track-detail', extra: track);
@@ -612,51 +620,27 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
         child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kapak ve Sıralama Badge
-          Stack(
-            children: [
-              Container(
-                height: 140,
-                width: 140,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey[800] : Colors.grey[200],
-                  borderRadius: BorderRadius.circular(12),
-                  image: imageUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(imageUrl),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: imageUrl == null
-                    ? Icon(
-                        Icons.music_note,
-                        size: 50,
-                        color: isDark ? Colors.grey[600] : Colors.grey[400],
-                      )
-                    : null,
-              ),
-              if (rankBadge != null)
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      rankBadge,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          // Kapak
+          Container(
+            height: 140,
+            width: 140,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: imageUrl == null
+                ? Icon(
+                    Icons.music_note,
+                    size: 50,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  )
+                : null,
           ),
           const SizedBox(height: 8),
           Text(

@@ -961,6 +961,44 @@ class EnhancedSpotifyService {
     }
   }
   
+  /// Search for albums only
+  static Future<List<Map<String, dynamic>>> searchAlbums(String query, {int limit = 20}) async {
+    try {
+      // Try to use user token first, fallback to client credentials
+      String? token = _accessToken;
+      
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
+      
+      if (token != null) {
+        final response = await _dio.get(
+          '${AppConstants.baseUrl}/search',
+          queryParameters: {
+            'q': query,
+            'type': 'album',
+            'limit': limit,
+          },
+          options: Options(
+            headers: {'Authorization': 'Bearer $token'},
+          ),
+        );
+        
+        if (response.statusCode == 200 && response.data['albums']?['items'] != null) {
+          final items = response.data['albums']['items'] as List;
+          return items.cast<Map<String, dynamic>>();
+        }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error searching albums: $e');
+      return [];
+    }
+  }
+  
   /// Get album details
   static Future<Map<String, dynamic>?> getAlbum(String albumId) async {
     try {

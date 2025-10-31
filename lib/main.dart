@@ -27,6 +27,7 @@ import 'features/profile/presentation/pages/enhanced_profile_page.dart';
 import 'features/profile/presentation/pages/letterboxd_profile_page.dart';
 import 'features/search/presentation/pages/advanced_search_page.dart';
 import 'features/search/presentation/pages/modern_search_page.dart';
+import 'features/search/presentation/pages/search_results_page.dart';
 import 'features/statistics/presentation/pages/statistics_page.dart';
 import 'features/music/presentation/pages/my_ratings_page.dart';
 import 'features/settings/presentation/pages/settings_page.dart';
@@ -163,6 +164,11 @@ final _router = GoRouter(
       name: 'home',
       builder: (context, state) => const MainNavigationPage(),
     ),
+    GoRoute(
+      path: '/profile-tab',
+      name: 'profile-tab',
+      builder: (context, state) => const MainNavigationPage(initialTab: 4),
+    ),
         GoRoute(
           path: '/spotify-connect',
           name: 'spotify-connect',
@@ -172,6 +178,18 @@ final _router = GoRouter(
           path: '/search',
           name: 'search',
           builder: (context, state) => const ModernSearchPage(),
+        ),
+        GoRoute(
+          path: '/search-results',
+          name: 'search-results',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>;
+            return SearchResultsPage(
+              query: extra['query'] as String,
+              type: extra['type'] as String,
+              results: extra['results'] as List<Map<String, dynamic>>,
+            );
+          },
         ),
         GoRoute(
           path: '/discover',
@@ -360,14 +378,22 @@ class AuthWrapper extends ConsumerWidget {
 
 
 class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({super.key});
+  final int initialTab;
+  
+  const MainNavigationPage({super.key, this.initialTab = 0});
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
 class _MainNavigationPageState extends State<MainNavigationPage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+  
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab;
+  }
 
   final List<Widget> _pages = [
     const MusicShareHomePage(),

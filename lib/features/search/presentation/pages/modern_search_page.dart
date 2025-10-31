@@ -16,9 +16,7 @@ class ModernSearchPage extends ConsumerStatefulWidget {
   ConsumerState<ModernSearchPage> createState() => _ModernSearchPageState();
 }
 
-class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
   late TextEditingController _searchController;
   Timer? _debounce;
   
@@ -34,14 +32,12 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _searchController = TextEditingController();
     _loadRecentSearches();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
     _searchController.dispose();
     _debounce?.cancel();
     super.dispose();
@@ -110,7 +106,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
       final results = await Future.wait([
         EnhancedSpotifyService.searchTracks(query, limit: 20),
         EnhancedSpotifyService.searchArtists(query, limit: 20),
-        EnhancedSpotifyService.search(query: query, types: ['album'], limit: 20),
+        EnhancedSpotifyService.searchAlbums(query, limit: 20),
       ]);
 
       // Search users from Firebase Bypass Auth
@@ -120,15 +116,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
         setState(() {
           _trackResults = results[0] as List<Map<String, dynamic>>;
           _artistResults = results[1] as List<Map<String, dynamic>>;
-          
-          // Extract albums from search response
-          final albumResponse = results[2] as Map<String, dynamic>;
-          if (albumResponse['albums']?['items'] != null) {
-            _albumResults = (albumResponse['albums']['items'] as List)
-                .cast<Map<String, dynamic>>();
-          } else {
-            _albumResults = [];
-          }
+          _albumResults = results[2] as List<Map<String, dynamic>>;
           
           _userResults = userResults;
           _isSearching = false;
@@ -151,50 +139,349 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
       appBar: AppBar(
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
-        title: Text(
+        title: const Text(
           'Search',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87,
+            color: Colors.white,
           ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(110),
-          child: Column(
-            children: [
-              // Search bar
+        automaticallyImplyLeading: true,
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildSearchBar(isDark),
+          ),
+          Expanded(
+            child: _buildAllResultsView(isDark),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllResultsView(bool isDark) {
+    if (_currentQuery.isEmpty) {
+      return _buildRecentSearches(isDark);
+    }
+
+    if (_isSearching) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Albums Section
+          if (_albumResults.isNotEmpty) ...
+            [
               Padding(
-                padding: const EdgeInsets.all(16),
-                child: _buildSearchBar(isDark),
-              ),
-              // Tabs
-              TabBar(
-                controller: _tabController,
-                indicatorColor: AppTheme.primaryColor,
-                labelColor: AppTheme.primaryColor,
-                unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
+                padding: const EdgeInsets.only(top: 16, bottom: 12),
+                child: Text(
+                  'Albums',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
                 ),
-                tabs: const [
-                  Tab(text: 'Tracks'),
-                  Tab(text: 'Artists'),
-                  Tab(text: 'Albums'),
-                  Tab(text: 'Users'),
-                ],
+              ),
+              ..._albumResults.take(5).map((album) => _buildAlbumCard(album, isDark)),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: GestureDetector(
+                  onTap: () => context.push(
+                    '/search-results',
+                    extra: {
+                      'query': _currentQuery,
+                      'type': 'albums',
+                      'results': _albumResults,
+                    },
+                  ),
+                  child: Text(
+                    'View all albums...',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ),
             ],
-          ),
+          // Tracks Section
+          if (_trackResults.isNotEmpty) ...
+            [
+              Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 12),
+                child: Text(
+                  'Tracks',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              ..._trackResults.take(5).map((track) => _buildTrackCard(track, isDark)),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: GestureDetector(
+                  onTap: () => context.push(
+                    '/search-results',
+                    extra: {
+                      'query': _currentQuery,
+                      'type': 'tracks',
+                      'results': _trackResults,
+                    },
+                  ),
+                  child: Text(
+                    'View all songs...',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          // Artists Section
+          if (_artistResults.isNotEmpty) ...
+            [
+              Padding(
+                padding: const EdgeInsets.only(top: 16, bottom: 12),
+                child: Text(
+                  'Artists',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              ..._artistResults.take(5).map((artist) => _buildArtistCard(artist, isDark)),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: GestureDetector(
+                  onTap: () => context.push(
+                    '/search-results',
+                    extra: {
+                      'query': _currentQuery,
+                      'type': 'artists',
+                      'results': _artistResults,
+                    },
+                  ),
+                  child: Text(
+                    'View all artists...',
+                    style: TextStyle(
+                      color: AppTheme.primaryColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAlbumCard(Map<String, dynamic> album, bool isDark) {
+    final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+        ? album['images'][0]['url']
+        : null;
+    final artistNames = (album['artists'] as List?)
+        ?.map((a) => a['name'])
+        .join(', ') ?? 'Unknown Artist';
+
+    return GestureDetector(
+      onTap: () => context.push('/album-detail', extra: album),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: isDark
+            ? ModernDesignSystem.darkGlassmorphism
+            : BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+                boxShadow: ModernDesignSystem.subtleShadow,
+              ),
+        child: Row(
+          children: [
+            // Album cover
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[800] : Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+                image: imageUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(imageUrl),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: imageUrl == null
+                  ? Icon(
+                      Icons.album,
+                      color: isDark ? Colors.grey[600] : Colors.grey[400],
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            // Album info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    album['name'] ?? 'Unknown Album',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    artistNames,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: isDark ? Colors.grey[600] : Colors.grey[400],
+            ),
+          ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+    );
+  }
+
+  Widget _buildAlbumHorizontalCard(Map<String, dynamic> album, bool isDark) {
+    final imageUrl = (album['images'] as List?)?.isNotEmpty == true
+        ? album['images'][0]['url']
+        : null;
+
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTracksTab(isDark),
-          _buildArtistsTab(isDark),
-          _buildAlbumsTab(isDark),
-          _buildUsersTab(isDark),
+          Container(
+            height: 100,
+            width: 100,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: imageUrl == null
+                ? Icon(
+                    Icons.album,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  )
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackHorizontalCard(Map<String, dynamic> track, bool isDark) {
+    final imageUrl = (track['album']?['images'] as List?)?.isNotEmpty == true
+        ? track['album']['images'][0]['url']
+        : null;
+
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 100,
+            width: 100,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              borderRadius: BorderRadius.circular(8),
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: imageUrl == null
+                ? Icon(
+                    Icons.music_note,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  )
+                : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArtistHorizontalCard(Map<String, dynamic> artist, bool isDark) {
+    final imageUrl = (artist['images'] as List?)?.isNotEmpty == true
+        ? artist['images'][0]['url']
+        : null;
+
+    return Container(
+      width: 100,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 100,
+            width: 100,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.grey[200],
+              shape: BoxShape.circle,
+              image: imageUrl != null
+                  ? DecorationImage(
+                      image: NetworkImage(imageUrl),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
+            ),
+            child: imageUrl == null
+                ? Icon(
+                    Icons.person,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  )
+                : null,
+          ),
         ],
       ),
     );
@@ -216,7 +503,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Şarkı, sanatçı veya kullanıcı ara...',
+          hintText: 'Search songs, artists, or albums...',
           prefixIcon: Icon(
             Icons.search,
             color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -247,7 +534,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
           // Debounce search
           if (_debounce?.isActive ?? false) _debounce!.cancel();
           _debounce = Timer(const Duration(milliseconds: 500), () {
-            if (value.length >= 2) {
+            if (value.length >= 1) {
               _performSearch(value);
             }
           });
@@ -273,8 +560,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     if (_trackResults.isEmpty) {
       return _buildEmptyState(
         Icons.search_off,
-        'Sonuç Bulunamadı',
-        '"$_currentQuery" için şarkı bulunamadı',
+        'No Results',
+        'No songs found for "$_currentQuery"',
         isDark,
       );
     }
@@ -305,8 +592,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     if (_artistResults.isEmpty) {
       return _buildEmptyState(
         Icons.search_off,
-        'Sonuç Bulunamadı',
-        '"$_currentQuery" için sanatçı bulunamadı',
+        'No Results',
+        'No artists found for "$_currentQuery"',
         isDark,
       );
     }
@@ -337,8 +624,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     if (_albumResults.isEmpty) {
       return _buildEmptyState(
         Icons.search_off,
-        'Sonuç Bulunamadı',
-        '"$_currentQuery" için albüm bulunamadı',
+        'No Results',
+        'No albums found for "$_currentQuery"',
         isDark,
       );
     }
@@ -375,8 +662,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     if (_userResults.isEmpty) {
       return _buildEmptyState(
         Icons.search_off,
-        'Sonuç Bulunamadı',
-        '"$_currentQuery" için kullanıcı bulunamadı',
+        'No Results',
+        'No users found for "$_currentQuery"',
         isDark,
       );
     }
@@ -772,8 +1059,8 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
     if (_recentSearches.isEmpty) {
       return _buildEmptyState(
         Icons.search_rounded,
-        'Arama Yap',
-        'Şarkı, sanatçı, albüm veya kullanıcı ara',
+        'Search',
+        'Search for songs, artists, albums, or users',
         isDark,
       );
     }
@@ -785,7 +1072,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Son Aramalar',
+              'Recent Searches',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -795,7 +1082,7 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage>
             TextButton(
               onPressed: _clearSearchHistory,
               child: Text(
-                'Temizle',
+                'Clear',
                 style: TextStyle(
                   color: AppTheme.primaryColor,
                 ),
