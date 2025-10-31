@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/modern_design_system.dart';
+import '../../services/haptic_service.dart';
 
 class AlbumCard extends StatefulWidget {
   final Map<String, dynamic> album;
@@ -19,32 +20,8 @@ class AlbumCard extends StatefulWidget {
   State<AlbumCard> createState() => _AlbumCardState();
 }
 
-class _AlbumCardState extends State<AlbumCard> with SingleTickerProviderStateMixin {
+class _AlbumCardState extends State<AlbumCard> {
   bool _isHovered = false;
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _rotationAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.02).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,58 +37,56 @@ class _AlbumCardState extends State<AlbumCard> with SingleTickerProviderStateMix
     final year = releaseDate?.split('-').first;
 
     return GestureDetector(
-      onTap: widget.onTap ?? () => context.push('/album-detail', extra: widget.album),
+      onTap: () {
+        HapticService.lightImpact();
+        if (widget.onTap != null) {
+          widget.onTap!();
+        } else {
+          context.push('/album-detail', extra: widget.album);
+        }
+      },
       child: MouseRegion(
-        onEnter: (_) {
-          setState(() => _isHovered = true);
-          _controller.forward();
-        },
-        onExit: (_) {
-          setState(() => _isHovered = false);
-          _controller.reverse();
-        },
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) => Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Transform(
-              transform: Matrix4.identity()
-                ..setEntry(3, 2, 0.001)
-                ..rotateY(_rotationAnimation.value),
-              alignment: Alignment.center,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? ModernDesignSystem.darkCard
-                      : ModernDesignSystem.lightCard,
-                  borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
-                  border: Border.all(
-                    color: isDark
-                        ? ModernDesignSystem.darkBorder
-                        : ModernDesignSystem.lightBorder,
-                  ),
-                  boxShadow: _isHovered
-                      ? [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                          BoxShadow(
-                            color: ModernDesignSystem.accentPurple.withOpacity(0.1),
-                            blurRadius: 30,
-                            offset: const Offset(0, 15),
-                          ),
-                        ]
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: Column(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        child: AnimatedScale(
+          scale: _isHovered ? 1.02 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? ModernDesignSystem.darkCard
+                  : ModernDesignSystem.lightCard,
+              borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
+              border: Border.all(
+                color: isDark
+                    ? ModernDesignSystem.darkBorder
+                    : ModernDesignSystem.lightBorder,
+              ),
+              boxShadow: _isHovered
+                  ? [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                      BoxShadow(
+                        color: ModernDesignSystem.accentPurple.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ]
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Album Cover
@@ -190,57 +165,59 @@ class _AlbumCardState extends State<AlbumCard> with SingleTickerProviderStateMix
                     ),
 
                     // Album Info
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            albumName,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black,
-                              fontSize: ModernDesignSystem.fontSizeM,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 6),
-                          if (widget.showArtist)
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              artistName,
+                              albumName,
                               style: TextStyle(
-                                color: isDark ? Colors.grey[400] : Colors.grey[600],
-                                fontSize: ModernDesignSystem.fontSizeS,
+                                color: isDark ? Colors.white : Colors.black,
+                                fontSize: ModernDesignSystem.fontSizeM,
+                                fontWeight: FontWeight.bold,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          if (year != null) ...[
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: ModernDesignSystem.accentPurple.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                year,
+                            if (widget.showArtist) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                artistName,
                                 style: TextStyle(
-                                  color: ModernDesignSystem.accentPurple,
-                                  fontSize: ModernDesignSystem.fontSizeXS,
-                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                  fontSize: ModernDesignSystem.fontSizeS,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            if (year != null) ...[
+                              const SizedBox(height: 2),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: ModernDesignSystem.accentPurple.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  year,
+                                  style: TextStyle(
+                                    color: ModernDesignSystem.accentPurple,
+                                    fontSize: ModernDesignSystem.fontSizeXS,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                            ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
           ),
         ),
       ),

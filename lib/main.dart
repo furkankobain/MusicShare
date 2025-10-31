@@ -22,6 +22,9 @@ import 'features/home/presentation/pages/home_page.dart';
 import 'features/home/presentation/pages/modern_home_page.dart';
 import 'features/home/presentation/pages/music_share_home_page.dart';
 import 'features/discover/presentation/pages/discover_page.dart';
+import 'features/discover/presentation/pages/discover_search_page.dart';
+import 'features/discover/presentation/pages/discover_section_page.dart';
+import 'features/discover/presentation/pages/genre_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/enhanced_profile_page.dart';
 import 'features/profile/presentation/pages/letterboxd_profile_page.dart';
@@ -29,6 +32,7 @@ import 'features/search/presentation/pages/advanced_search_page.dart';
 import 'features/search/presentation/pages/modern_search_page.dart';
 import 'features/search/presentation/pages/search_results_page.dart';
 import 'features/statistics/presentation/pages/statistics_page.dart';
+import 'features/statistics/presentation/pages/listening_stats_page.dart';
 import 'features/music/presentation/pages/my_ratings_page.dart';
 import 'features/settings/presentation/pages/settings_page.dart';
 import 'shared/widgets/feedback/feedback_widgets.dart';
@@ -62,6 +66,7 @@ import 'features/playlists/qr_scanner_page.dart';
 import 'features/playlists/smart_playlists_page.dart';
 import 'features/messaging/conversations_page.dart';
 import 'shared/models/music_list.dart';
+import 'shared/widgets/mini_player/mini_player.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -196,10 +201,37 @@ final _router = GoRouter(
           name: 'discover',
           builder: (context, state) => const DiscoverPage(),
         ),
+        GoRoute(
+          path: '/discover-search',
+          name: 'discover-search',
+          builder: (context, state) => const DiscoverSearchPage(),
+        ),
+        GoRoute(
+          path: '/discover-section/:type/:title',
+          name: 'discover-section',
+          builder: (context, state) {
+            final type = state.pathParameters['type']!;
+            final title = state.pathParameters['title']!;
+            return DiscoverSectionPage(title: title, sectionType: type);
+          },
+        ),
+        GoRoute(
+          path: '/genre/:genre',
+          name: 'genre',
+          builder: (context, state) {
+            final genre = state.pathParameters['genre']!;
+            return GenrePage(genre: genre);
+          },
+        ),
       GoRoute(
         path: '/statistics',
         name: 'statistics',
         builder: (context, state) => const StatisticsPage(),
+      ),
+      GoRoute(
+        path: '/listening-stats',
+        name: 'listening-stats',
+        builder: (context, state) => const ListeningStatsPage(),
       ),
       GoRoute(
         path: '/my-ratings',
@@ -406,7 +438,17 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_currentIndex],
+      body: Stack(
+        children: [
+          _pages[_currentIndex],
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 56,
+            child: const MiniPlayer(),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

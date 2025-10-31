@@ -10,6 +10,7 @@ import '../../../../shared/services/app_rating_service.dart';
 import '../../../../shared/services/firebase_bypass_auth_service.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/google_sign_in_service.dart';
+import '../../../../shared/services/haptic_service.dart';
 import '../../../../core/theme/modern_design_system.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -69,6 +70,86 @@ class SettingsPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
+          // Animated Theme Toggle
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+                    color: themeColors.primaryColor,
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Dark Mode',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Text(
+                        themeMode == ThemeMode.dark ? 'Enabled' : 'Disabled',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                width: 56,
+                height: 32,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: themeMode == ThemeMode.dark
+                        ? [const Color(0xFFFF5E5E), const Color(0xFFFF8E8E)]
+                        : [Colors.grey[300]!, Colors.grey[400]!],
+                  ),
+                ),
+                child: InkWell(
+                  onTap: () {
+                    HapticService.mediumImpact();
+                    ref.read(themeProvider.notifier).setTheme(
+                      themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
+                    );
+                  },
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    alignment: themeMode == ThemeMode.dark
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      width: 24,
+                      height: 24,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        themeMode == ThemeMode.dark ? Icons.nights_stay : Icons.wb_sunny,
+                        size: 16,
+                        color: themeMode == ThemeMode.dark
+                            ? const Color(0xFFFF5E5E)
+                            : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 32),
           _buildThemeOption(
             context,
             ref,

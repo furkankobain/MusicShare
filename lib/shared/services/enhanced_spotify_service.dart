@@ -547,32 +547,58 @@ class EnhancedSpotifyService {
     int limit = 20,
   }) async {
     try {
-      await _checkAndRefreshToken();
+      String? token = _accessToken;
       
-      // Use Spotify search with high popularity to get global popular tracks
-      final response = await _dio.get(
-        '${AppConstants.baseUrl}/search',
-        queryParameters: {
-          'q': 'popularity:>70',  // Highly popular tracks
-          'type': 'track',
-          'limit': limit,
-          'market': 'US',  // Global market
-        },
-        options: Options(
-          headers: {'Authorization': 'Bearer $_accessToken'},
-        ),
-      );
+      if (!_isConnected || token == null) {
+        token = await _getClientCredentialsToken();
+      } else {
+        await _checkAndRefreshToken();
+      }
       
-      if (response.statusCode == 200) {
-        final tracks = response.data['tracks']['items'] as List?;
-        return tracks?.cast<Map<String, dynamic>>() ?? [];
+      if (token != null) {
+        // Search for popular artists' latest tracks
+        final popularArtists = [
+          'Taylor Swift', 'Drake', 'Bad Bunny', 'The Weeknd', 'Ed Sheeran',
+          'Ariana Grande', 'Post Malone', 'Billie Eilish', 'Travis Scott',
+        ];
+        
+        List<Map<String, dynamic>> allTracks = [];
+        
+        for (var artist in popularArtists.take(5)) { // Limit to avoid too many API calls
+          try {
+            final response = await _dio.get(
+              '${AppConstants.baseUrl}/search',
+              queryParameters: {
+                'q': 'artist:$artist',
+                'type': 'track',
+                'limit': 3,
+                'market': 'US',
+              },
+              options: Options(
+                headers: {'Authorization': 'Bearer $token'},
+              ),
+            );
+            
+            if (response.statusCode == 200 && response.data['tracks']?['items'] != null) {
+              final tracks = response.data['tracks']['items'] as List;
+              allTracks.addAll(tracks.cast<Map<String, dynamic>>());
+            }
+          } catch (e) {
+            print('Failed to fetch tracks for $artist: $e');
+          }
+        }
+        
+        if (allTracks.isNotEmpty) {
+          // Sort by popularity
+          allTracks.sort((a, b) => (b['popularity'] ?? 0).compareTo(a['popularity'] ?? 0));
+          return allTracks.take(limit).toList();
+        }
       }
       
       return [];
     } catch (e) {
       print('Error fetching global popular tracks: $e');
-      // Fallback to getting new releases if search fails
-      return await getNewReleases(limit: limit);
+      return [];
     }
   }
 
@@ -1028,37 +1054,6 @@ class EnhancedSpotifyService {
     int offset = 0,
   }) async {
     try {
-      await _checkAndRefreshToken();
-      
-      final response = await _dio.get(
-        '${AppConstants.baseUrl}/browse/new-releases',
-        queryParameters: {
-          'limit': limit,
-          'offset': offset,
-        },
-        options: Options(
-          headers: {'Authorization': 'Bearer $_accessToken'},
-        ),
-      );
-      
-      if (response.statusCode == 200) {
-        final items = response.data['albums']['items'] as List;
-        return items.cast<Map<String, dynamic>>();
-      }
-      
-      return [];
-    } catch (e) {
-      print('Error fetching new releases: $e');
-      return [];
-    }
-  }
-
-  /// Get featured playlists
-  static Future<List<Map<String, dynamic>>> getFeaturedPlaylists({
-    int limit = 20,
-    int offset = 0,
-  }) async {
-    try {
       String? token = _accessToken;
       
       if (!_isConnected || token == null) {
@@ -1069,7 +1064,7 @@ class EnhancedSpotifyService {
       
       if (token != null) {
         final response = await _dio.get(
-          '${AppConstants.baseUrl}/browse/featured-playlists',
+          '${AppConstants.baseUrl}/browse/new-releases',
           queryParameters: {
             'limit': limit,
             'offset': offset,
@@ -1079,10 +1074,47 @@ class EnhancedSpotifyService {
           ),
         );
         
-        if (response.statusCode == 200 && response.data['playlists']?['items'] != null) {
-          final items = response.data['playlists']['items'] as List;
+        if (response.statusCode == 200 && response.data['albums']?['items'] != null) {
+          final items = response.data['albums']['items'] as List;
           return items.cast<Map<String, dynamic>>();
         }
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching new releases: $e');
+      return [];
+    }
+  }
+
+  /// Get featured playlists (requires user authentication)
+  static Future<List<Map<String, dynamic>>> getFeaturedPlaylists({
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      // Featured playlists require user authentication
+      if (!_isConnected || _accessToken == null) {
+        print('Featured playlists require Spotify login');
+        return [];
+      }
+      
+      await _checkAndRefreshToken();
+      
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/browse/featured-playlists',
+        queryParameters: {
+          'limit': limit,
+          'offset': offset,
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200 && response.data['playlists']?['items'] != null) {
+        final items = response.data['playlists']['items'] as List;
+        return items.cast<Map<String, dynamic>>();
       }
       
       return [];

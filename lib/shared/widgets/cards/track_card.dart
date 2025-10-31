@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
 import '../../../core/theme/modern_design_system.dart';
+import '../../services/mini_player_service.dart';
+import '../../services/haptic_service.dart';
 
 class TrackCard extends StatefulWidget {
   final Map<String, dynamic> track;
@@ -69,7 +71,10 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
     final explicit = widget.track['explicit'] as bool? ?? false;
 
     return GestureDetector(
-      onTapDown: (_) => _animationController.forward(),
+      onTapDown: (_) {
+        _animationController.forward();
+        HapticService.lightImpact();
+      },
       onTapUp: (_) {
         _animationController.reverse();
         if (widget.onTap != null) {
@@ -153,15 +158,21 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
                         // Play overlay on hover
                         if (_isHovered)
                           Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.play_circle_filled,
-                                color: Colors.white,
-                                size: 32,
+                            child: GestureDetector(
+                              onTap: () {
+                                HapticService.mediumImpact();
+                                MiniPlayerService().playTrack(widget.track);
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.play_circle_filled,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
                               ),
                             ),
                           ),

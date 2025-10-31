@@ -192,6 +192,32 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
 
                   const SizedBox(height: 20),
 
+                  // Stats Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => context.push('/listening-stats'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFFFF5E5E),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.insights, size: 20),
+                      label: const Text(
+                        'Listening Stats',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
                   // Buttons Row
                   Row(
                     children: [

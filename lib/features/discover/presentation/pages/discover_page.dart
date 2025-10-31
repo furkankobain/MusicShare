@@ -15,27 +15,19 @@ class DiscoverPage extends ConsumerStatefulWidget {
   ConsumerState<DiscoverPage> createState() => _DiscoverPageState();
 }
 
-class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerProviderStateMixin {
+class _DiscoverPageState extends ConsumerState<DiscoverPage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _newReleases = [];
   List<Map<String, dynamic>> _topTracks = [];
   List<Map<String, dynamic>> _featured = [];
   List<Map<String, dynamic>> _categories = [];
-  late TabController _tabController;
   
   String _currentViewMode = 'grid';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
     _loadData();
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -71,45 +63,350 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? ModernDesignSystem.darkBackground : ModernDesignSystem.lightBackground,
       appBar: AppBar(
-        title: const Text('Discover', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: isDark ? ModernDesignSystem.darkSurface : ModernDesignSystem.lightSurface,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(_currentViewMode == 'grid' ? Icons.view_list : Icons.grid_view),
-            onPressed: () => setState(() => _currentViewMode = _currentViewMode == 'grid' ? 'list' : 'grid'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => context.push('/search'),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: ModernDesignSystem.accentPurple,
-          unselectedLabelColor: isDark ? Colors.grey[500] : Colors.grey[600],
-          indicatorColor: ModernDesignSystem.accentPurple,
-          indicatorWeight: 3,
-          tabs: const [
-            Tab(text: 'New Releases'),
-            Tab(text: 'Popular'),
-            Tab(text: 'Playlists'),
-            Tab(text: 'Categories'),
-          ],
-        ),
+        title: _buildSearchBox(isDark),
+        titleSpacing: 16,
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
-        child: TabBarView(
-          controller: _tabController,
+        child: _buildMusicTab(isDark),
+      ),
+    );
+  }
+
+  Widget _buildSearchBox(bool isDark) {
+    return GestureDetector(
+      onTap: () => context.push('/discover-search'),
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850] : Colors.grey[100],
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
           children: [
-            _buildNewReleasesTab(isDark),
-            _buildTopTracksTab(isDark),
-            _buildFeaturedTab(isDark),
-            _buildCategoriesTab(isDark),
+            Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600], size: 20),
+            const SizedBox(width: 12),
+            Text(
+              'Search music, artists, albums...',
+              style: TextStyle(
+                color: isDark ? Colors.grey[500] : Colors.grey[500],
+                fontSize: 15,
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMusicTab(bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trending Section
+          _buildSectionHeader('Trending', isDark),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildTrendingBox('Hot New Releases', Icons.local_fire_department, Colors.orange, isDark)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildTrendingBox('Popular This Week', Icons.trending_up, Colors.green, isDark)),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Top Lists Section
+          _buildSectionHeader('Top Lists', isDark),
+          const SizedBox(height: 12),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
+            children: [
+              _buildTopListBox('Top 250 Albums', Icons.album, const Color(0xFFFF5E5E), isDark),
+              _buildTopListBox('Top 250 Tracks', Icons.music_note, const Color(0xFFFF5E5E), isDark),
+              _buildTopListBox('Top 250 Artists', Icons.person, const Color(0xFFFF5E5E), isDark),
+              _buildTopListBox('Most Popular Albums', Icons.star, const Color(0xFFFF5E5E), isDark),
+              _buildTopListBox('Most Popular Artists', Icons.people, const Color(0xFFFF5E5E), isDark),
+              _buildTopListBox('Most Popular Tracks', Icons.headphones, const Color(0xFFFF5E5E), isDark),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // For You Section
+          _buildSectionHeader('For You', isDark),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildForYouBox('Recommended', Icons.recommend, const Color(0xFFFF5E5E), isDark)),
+              const SizedBox(width: 12),
+              Expanded(child: _buildForYouBox('To Follow', Icons.person_add, const Color(0xFFFF5E5E), isDark)),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Community Section
+          _buildSectionHeader('Community', isDark),
+          const SizedBox(height: 12),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.3,
+            children: [
+              _buildCommunityBox('Trending Users', Icons.trending_up, const Color(0xFFFF5E5E), isDark),
+              _buildCommunityBox('Explore Reviews', Icons.rate_review, const Color(0xFFFF5E5E), isDark),
+              _buildCommunityBox('Explore Lists', Icons.list, const Color(0xFFFF5E5E), isDark),
+              _buildCommunityBox('Lists by Friends', Icons.group, const Color(0xFFFF5E5E), isDark),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Genres Section
+          _buildSectionHeader('Genres', isDark),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildGenreChip('Pop', isDark),
+              _buildGenreChip('Rock', isDark),
+              _buildGenreChip('Hip Hop', isDark),
+              _buildGenreChip('Electronic', isDark),
+              _buildGenreChip('Jazz', isDark),
+              _buildGenreChip('R&B', isDark),
+              _buildGenreChip('Country', isDark),
+              _buildGenreChip('Latin', isDark),
+              _buildGenreChip('Metal', isDark),
+              _buildGenreChip('Indie', isDark),
+            ],
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewsTab(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.rate_review, size: 64, color: isDark ? Colors.grey[700] : Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text('Reviews Tab - Coming Soon', style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600], fontSize: 18)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListsTab(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.list, size: 64, color: isDark ? Colors.grey[700] : Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text('Lists Tab - Coming Soon', style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600], fontSize: 18)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsersTab(bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.people, size: 64, color: isDark ? Colors.grey[700] : Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text('Users Tab - Coming Soon', style: TextStyle(color: isDark ? Colors.grey[500] : Colors.grey[600], fontSize: 18)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: isDark ? Colors.white : Colors.black,
+      ),
+    );
+  }
+
+  Widget _buildTrendingBox(String title, IconData icon, Color color, bool isDark) {
+    return InkWell(
+      onTap: () {
+        if (title.contains('New Releases')) {
+          context.push('/discover-section/new-releases/Hot New Releases');
+        } else if (title.contains('Popular')) {
+          context.push('/discover-section/popular/Popular This Week');
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.7), color],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 36, color: Colors.white),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopListBox(String title, IconData icon, Color color, bool isDark) {
+    return InkWell(
+      onTap: () {
+        if (title == 'Top 250 Albums') {
+          context.push('/discover-section/top-albums/Top 250 Albums');
+        } else if (title == 'Top 250 Tracks') {
+          context.push('/discover-section/top-tracks/Top 250 Tracks');
+        } else if (title == 'Top 250 Artists') {
+          context.push('/discover-section/top-artists/Top 250 Artists');
+        } else if (title == 'Most Popular Albums') {
+          context.push('/discover-section/popular-albums/Most Popular Albums');
+        } else if (title == 'Most Popular Artists') {
+          context.push('/discover-section/popular-artists/Most Popular Artists');
+        } else if (title == 'Most Popular Tracks') {
+          context.push('/discover-section/popular-tracks/Most Popular Tracks');
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? ModernDesignSystem.darkCard : ModernDesignSystem.lightCard,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: color),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildForYouBox(String title, IconData icon, Color color, bool isDark) {
+    return InkWell(
+      onTap: () {
+        if (title.contains('Recommended')) {
+          context.push('/discover-section/recommended-albums/Recommended Albums');
+        } else if (title.contains('Follow')) {
+          context.push('/discover-section/recommended-users/Recommended To Follow');
+        }
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: isDark ? ModernDesignSystem.darkCard : ModernDesignSystem.lightCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.5), width: 2),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(title, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCommunityBox(String title, IconData icon, Color color, bool isDark) {
+    return InkWell(
+      onTap: () {
+        if (title.contains('Trending Users')) {
+          context.push('/discover-section/trending-users/Trending Users');
+        } else if (title.contains('Reviews')) {
+          context.push('/discover-section/reviews/Explore Reviews');
+        } else if (title.contains('Explore Lists')) {
+          context.push('/discover-section/playlists/Explore Lists');
+        } else if (title.contains('Friends')) {
+          context.push('/discover-section/friends-lists/Lists by Friends');
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.6),
+              color.withOpacity(0.3),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 28, color: Colors.white),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGenreChip(String genre, bool isDark) {
+    return InkWell(
+      onTap: () => context.push('/genre/$genre'),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[800] : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFF5E5E).withOpacity(0.3)),
+        ),
+        child: Text(genre, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black)),
       ),
     );
   }
@@ -133,6 +430,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     if (_currentViewMode == 'grid') {
       return GridView.builder(
         padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        cacheExtent: 200,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.7,
@@ -140,18 +439,25 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
           mainAxisSpacing: 12,
         ),
         itemCount: _newReleases.length,
-        itemBuilder: (context, index) => AlbumCard(album: _newReleases[index]),
+        itemBuilder: (context, index) => AlbumCard(
+          key: ValueKey(_newReleases[index]['id']),
+          album: _newReleases[index],
+        ),
       );
     } else {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(),
+        cacheExtent: 200,
         itemCount: _newReleases.length,
         itemBuilder: (context, index) {
-          // Convert album to track format for TrackCard
           final album = _newReleases[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: AlbumCard(album: album),
+            child: AlbumCard(
+              key: ValueKey(album['id']),
+              album: album,
+            ),
           );
         },
       );
@@ -174,8 +480,13 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(),
+      cacheExtent: 200,
       itemCount: _topTracks.length,
-      itemBuilder: (context, index) => TrackCard(track: _topTracks[index]),
+      itemBuilder: (context, index) => TrackCard(
+        key: ValueKey(_topTracks[index]['id']),
+        track: _topTracks[index],
+      ),
     );
   }
 
@@ -195,6 +506,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(),
+      cacheExtent: 200,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.7,
@@ -202,7 +515,10 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
         mainAxisSpacing: 12,
       ),
       itemCount: _featured.length,
-      itemBuilder: (context, index) => AlbumCard(album: _featured[index]),
+      itemBuilder: (context, index) => AlbumCard(
+        key: ValueKey(_featured[index]['id']),
+        album: _featured[index],
+      ),
     );
   }
 
@@ -232,6 +548,8 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
+      physics: const AlwaysScrollableScrollPhysics(),
+      cacheExtent: 200,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 1.5,

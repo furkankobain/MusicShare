@@ -16,8 +16,9 @@ class ModernSearchPage extends ConsumerStatefulWidget {
   ConsumerState<ModernSearchPage> createState() => _ModernSearchPageState();
 }
 
-class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
+class _ModernSearchPageState extends ConsumerState<ModernSearchPage> with SingleTickerProviderStateMixin {
   late TextEditingController _searchController;
+  late TabController _tabController;
   Timer? _debounce;
   
   List<Map<String, dynamic>> _trackResults = [];
@@ -33,12 +34,14 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _tabController = TabController(length: 4, vsync: this);
     _loadRecentSearches();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -135,18 +138,34 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppTheme.backgroundColor : Colors.grey[50],
+      backgroundColor: isDark ? ModernDesignSystem.darkBackground : ModernDesignSystem.lightBackground,
       appBar: AppBar(
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+        backgroundColor: isDark ? ModernDesignSystem.darkSurface : ModernDesignSystem.lightSurface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Search',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: isDark ? Colors.white : Colors.black87,
           ),
         ),
         automaticallyImplyLeading: true,
+        bottom: _currentQuery.isNotEmpty ? PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: TabBar(
+            controller: _tabController,
+            labelColor: const Color(0xFFFF5E5E),
+            unselectedLabelColor: isDark ? Colors.grey[500] : Colors.grey[600],
+            indicatorColor: const Color(0xFFFF5E5E),
+            indicatorWeight: 3,
+            tabs: const [
+              Tab(text: 'All'),
+              Tab(text: 'Tracks'),
+              Tab(text: 'Artists'),
+              Tab(text: 'Albums'),
+            ],
+          ),
+        ) : null,
       ),
       body: Column(
         children: [
@@ -155,7 +174,23 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
             child: _buildSearchBar(isDark),
           ),
           Expanded(
-            child: _buildAllResultsView(isDark),
+            child: _currentQuery.isEmpty
+                ? _buildRecentSearches(isDark)
+                : _isSearching
+                    ? Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(const Color(0xFFFF5E5E)),
+                        ),
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildAllResultsView(isDark),
+                          _buildTracksTab(isDark),
+                          _buildArtistsTab(isDark),
+                          _buildAlbumsTab(isDark),
+                        ],
+                      ),
           ),
         ],
       ),
@@ -502,27 +537,39 @@ class _ModernSearchPageState extends ConsumerState<ModernSearchPage> {
       ),
       child: TextField(
         controller: _searchController,
+        style: TextStyle(
+          color: isDark ? Colors.white : Colors.black87,
+        ),
         decoration: InputDecoration(
           hintText: 'Search songs, artists, or albums...',
+          hintStyle: TextStyle(
+            color: isDark ? Colors.grey[500] : Colors.grey[500],
+          ),
           prefixIcon: Icon(
             Icons.search,
             color: isDark ? Colors.grey[400] : Colors.grey[600],
           ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: Icon(
+                    Icons.clear,
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  ),
                   onPressed: () {
                     _searchController.clear();
                     setState(() {
                       _currentQuery = '';
                       _trackResults = [];
                       _artistResults = [];
+                      _albumResults = [];
                       _userResults = [];
                     });
                   },
                 )
               : null,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 20,
             vertical: 14,
