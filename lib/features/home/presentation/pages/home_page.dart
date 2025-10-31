@@ -12,6 +12,7 @@ import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/favorites_service.dart';
 import '../../../../shared/widgets/cards/album_card.dart';
 import '../../../../shared/widgets/loading/loading_skeletons.dart';
+import '../../../../shared/widgets/timeline_feed_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -23,7 +24,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _newReleases = [];
-  List<Map<String, dynamic>> _featuredPlaylists = [];
+  List<Map<String, dynamic>> _timelinePosts = [];
   Map<String, int> _favoriteCounts = {};
   final _scrollController = ScrollController();
   double _scrollOffset = 0.0;
@@ -53,7 +54,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     try {
       // Load Spotify data
       final releases = await EnhancedSpotifyService.getNewReleases(limit: 6);
-      final playlists = await EnhancedSpotifyService.getFeaturedPlaylists(limit: 4);
 
       // Load favorites count
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -62,10 +62,13 @@ class _HomePageState extends ConsumerState<HomePage> {
         counts = await FavoritesService.getFavoritesCount();
       }
 
+      // Mock timeline posts (replace with real data from Firestore)
+      final posts = _generateMockTimelinePosts();
+
       if (mounted) {
         setState(() {
           _newReleases = releases;
-          _featuredPlaylists = playlists;
+          _timelinePosts = posts;
           _favoriteCounts = counts;
           _isLoading = false;
         });
@@ -76,6 +79,30 @@ class _HomePageState extends ConsumerState<HomePage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  List<Map<String, dynamic>> _generateMockTimelinePosts() {
+    return [
+      {
+        'title': 'Thriller',
+        'artist': 'Michael Jackson',
+        'type': 'Album',
+        'review': 'Why Michael Jackson will always be the GOAT!!!',
+        'rating': 5.0,
+        'userName': 'MusicLover92',
+        'reviewBody':
+            'I know this review is out a month before its next anniversary, but let me cook. Back in middle school, I was really obsessed with Michael Jackson. I was even trying to mimic him, and it was corny as hell...',
+      },
+      {
+        'title': 'Hotel California',
+        'artist': 'Eagles',
+        'type': 'Album',
+        'review': 'A masterpiece of rock music',
+        'rating': 5.0,
+        'userName': 'RockFan',
+        'reviewBody': 'This album is timeless. Every track is perfect and the production is amazing.',
+      },
+    ];
   }
 
   @override
@@ -182,38 +209,17 @@ class _HomePageState extends ConsumerState<HomePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Welcome Section with parallax
-                Transform.translate(
-                  offset: Offset(0, -_scrollOffset * 0.2),
-                  child: _buildModernWelcomeSection(context, isDark),
-                ),
-                
+                // Welcome Section
+                _buildModernWelcomeSection(context, isDark),
                 const SizedBox(height: 24),
-                
-                // Spotify Player Widget (only if connected)
-                if (EnhancedSpotifyService.isConnected)
-                  const EnhancedSpotifyPlayerWidget(),
-                
-                if (EnhancedSpotifyService.isConnected)
-                  const SizedBox(height: 24),
-                
                 // Quick Stats
                 _buildModernQuickStats(context, isDark),
-                
                 const SizedBox(height: 24),
-                
-                // New Releases
+                // Hot New Releases
                 _buildNewReleases(context, isDark),
-                
                 const SizedBox(height: 24),
-                
-                // Featured Playlists
-                _buildFeaturedPlaylists(context, isDark),
-                
-                const SizedBox(height: 24),
-                
-                // Recent Activity
-                _buildModernRecentActivity(context, isDark),
+                // Timeline Feed
+                _buildTimelineSection(context, isDark),
               ],
             ),
           ),
@@ -406,92 +412,6 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildFeaturedPlaylists(BuildContext context, bool isDark) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: ModernDesignSystem.blueGradient,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.featured_play_list_rounded,
-                      size: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Featured Playlists',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-              TextButton(
-                onPressed: () => context.push('/playlists'),
-                style: TextButton.styleFrom(
-                  foregroundColor: ModernDesignSystem.primaryGreen,
-                ),
-                child: const Text('All'),
-              ),
-            ],
-          ),
-        ),
-        if (_isLoading)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: 4,
-            itemBuilder: (context, index) => const AlbumCardSkeleton(),
-          )
-        else if (_featuredPlaylists.isEmpty)
-          Container(
-            height: 200,
-            alignment: Alignment.center,
-            child: Text(
-              'No featured playlists found',
-              style: TextStyle(
-                color: isDark ? Colors.grey[500] : Colors.grey[600],
-              ),
-            ),
-          )
-        else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.7,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _featuredPlaylists.length > 4 ? 4 : _featuredPlaylists.length,
-            itemBuilder: (context, index) {
-              return AlbumCard(album: _featuredPlaylists[index]);
-            },
-          ),
-      ],
-    );
-  }
 
   Widget _buildModernStatCard(BuildContext context, {
     required bool isDark,
@@ -562,74 +482,38 @@ class _HomePageState extends ConsumerState<HomePage> {
     );
   }
 
-  Widget _buildModernRecentActivity(BuildContext context, bool isDark) {
+  Widget _buildTimelineSection(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: ModernDesignSystem.purpleGradient,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.history_rounded,
-                  size: 20,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(width: 12),
               Text(
-                'Recent Activity',
+                'Timeline',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : ModernDesignSystem.textPrimary,
                 ),
               ),
+              TextButton(
+                onPressed: () {
+                  // Navigate to full timeline
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: ModernDesignSystem.primaryGreen,
+                ),
+                child: const Text('See All'),
+              ),
             ],
           ),
         ),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: isDark 
-              ? ModernDesignSystem.darkGlassmorphism
-              : BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
-                  boxShadow: ModernDesignSystem.mediumShadow,
-                ),
-          child: Column(
-            children: [
-              _buildModernActivityItem(
-                isDark: isDark,
-                icon: Icons.star_rounded,
-                title: '"Bohemian Rhapsody" puanlandı',
-                subtitle: '5 yıldız • 2 saat önce',
-                gradient: ModernDesignSystem.sunsetGradient,
-              ),
-              const SizedBox(height: 16),
-              _buildModernActivityItem(
-                isDark: isDark,
-                icon: Icons.playlist_add_rounded,
-                title: 'Favorilere eklendi',
-                subtitle: '"Hotel California" • 4 saat önce',
-                gradient: ModernDesignSystem.primaryGradient,
-              ),
-              const SizedBox(height: 16),
-              _buildModernActivityItem(
-                isDark: isDark,
-                icon: Icons.edit_note_rounded,
-                title: 'Bir yorum yazıldı',
-                subtitle: '"Dark Side of the Moon" • Dün',
-                gradient: ModernDesignSystem.blueGradient,
-              ),
-            ],
-          ),
+        TimelineFeedWidget(
+          posts: _timelinePosts,
+          isLoading: _isLoading,
         ),
       ],
     );
@@ -719,7 +603,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Bu Haftanın En İyileri',
+                    'This Week\'s Top Tracks',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -735,7 +619,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: TextButton.styleFrom(
                   foregroundColor: ModernDesignSystem.primaryGreen,
                 ),
-                child: const Text('Tümü'),
+                child: const Text('View All'),
               ),
             ],
           ),

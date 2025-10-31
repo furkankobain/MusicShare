@@ -32,28 +32,28 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         // Mood-based playlists
         SmartPlaylist(
           id: 'mood_energetic',
-          title: '⚡ Enerjik',
-          description: 'Yüksek enerjili ve tempolu şarkılar',
+          title: '⚡ Energetic',
+          description: 'High-energy and upbeat songs',
           icon: Icons.flash_on,
           color: Colors.orange,
           trackCount: 32,
-          criteria: 'Enerji > 80, Tempo > 120 BPM',
+          criteria: 'Energy > 80, Tempo > 120 BPM',
           type: SmartPlaylistType.mood,
         ),
         SmartPlaylist(
           id: 'mood_chill',
-          title: '😌 Sakin',
-          description: 'Rahatlatıcı ve huzur veren şarkılar',
+          title: '😌 Chill',
+          description: 'Relaxing and peaceful songs',
           icon: Icons.spa,
           color: Colors.blue,
           trackCount: 28,
-          criteria: 'Enerji < 40, Tempo < 100 BPM',
+          criteria: 'Energy < 40, Tempo < 100 BPM',
           type: SmartPlaylistType.mood,
         ),
         SmartPlaylist(
           id: 'mood_happy',
-          title: '😊 Mutlu',
-          description: 'Pozitif ve neşeli şarkılar',
+          title: '😊 Happy',
+          description: 'Positive and cheerful songs',
           icon: Icons.sentiment_satisfied_alt,
           color: Colors.yellow.shade700,
           trackCount: 25,
@@ -62,8 +62,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         ),
         SmartPlaylist(
           id: 'mood_focus',
-          title: '🎯 Konsantrasyon',
-          description: 'Çalışma ve odaklanma için',
+          title: '🎯 Focus',
+          description: 'For work and concentration',
           icon: Icons.headphones,
           color: Colors.purple,
           trackCount: 40,
@@ -74,8 +74,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         // Genre-based playlists
         SmartPlaylist(
           id: 'genre_rock',
-          title: '🎸 Rock Koleksiyonu',
-          description: 'Tüm rock şarkıların',
+          title: '🎸 Rock Collection',
+          description: 'All rock songs',
           icon: Icons.music_note,
           color: Colors.red,
           trackCount: 45,
@@ -84,8 +84,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         ),
         SmartPlaylist(
           id: 'genre_pop',
-          title: '🎤 Pop Favorileri',
-          description: 'En sevilen pop şarkılar',
+          title: '🎤 Pop Favorites',
+          description: 'Most loved pop songs',
           icon: Icons.stars,
           color: Colors.pink,
           trackCount: 38,
@@ -95,7 +95,7 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         SmartPlaylist(
           id: 'genre_hiphop',
           title: '🎧 Hip Hop & Rap',
-          description: 'Hip hop ve rap koleksiyonu',
+          description: 'Hip hop and rap collection',
           icon: Icons.graphic_eq,
           color: Colors.deepPurple,
           trackCount: 30,
@@ -106,8 +106,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         // Decade-based playlists
         SmartPlaylist(
           id: 'decade_90s',
-          title: '📼 90\'lar Nostalji',
-          description: '1990-1999 arası çıkan şarkılar',
+          title: '📼 90\'s Nostalgia',
+          description: 'Songs released from 1990-1999',
           icon: Icons.history,
           color: Colors.teal,
           trackCount: 35,
@@ -116,8 +116,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         ),
         SmartPlaylist(
           id: 'decade_2000s',
-          title: '💿 2000\'ler',
-          description: '2000-2009 arası çıkan şarkılar',
+          title: '💿 2000\'s',
+          description: 'Songs released from 2000-2009',
           icon: Icons.album,
           color: Colors.green,
           trackCount: 42,
@@ -126,8 +126,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         ),
         SmartPlaylist(
           id: 'decade_2010s',
-          title: '📱 2010\'lar',
-          description: '2010-2019 arası çıkan şarkılar',
+          title: '📱 2010\'s',
+          description: 'Songs released from 2010-2019',
           icon: Icons.queue_music,
           color: Colors.indigo,
           trackCount: 50,
@@ -138,8 +138,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         // Activity-based
         SmartPlaylist(
           id: 'activity_workout',
-          title: '💪 Spor',
-          description: 'Antrenman için motivasyon',
+          title: '💪 Workout',
+          description: 'Motivation for your workout',
           icon: Icons.fitness_center,
           color: Colors.red.shade700,
           trackCount: 30,
@@ -148,8 +148,8 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         ),
         SmartPlaylist(
           id: 'activity_party',
-          title: '🎉 Parti',
-          description: 'Parti ve eğlence için',
+          title: '🎉 Party',
+          description: 'For parties and fun',
           icon: Icons.celebration,
           color: Colors.deepOrange,
           trackCount: 35,
@@ -171,7 +171,7 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
           : ModernDesignSystem.lightBackground,
       appBar: AppBar(
         title: const Text(
-          'Akıllı Çalma Listeleri',
+          'Smart Playlists',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: isDark
@@ -182,12 +182,12 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _generateSmartPlaylists,
-            tooltip: 'Yenile',
+            tooltip: 'Refresh',
           ),
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: () => _showInfoDialog(context, isDark),
-            tooltip: 'Bilgi',
+            tooltip: 'Info',
           ),
         ],
       ),
@@ -202,7 +202,7 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
                   children: [
                     // Header
                     Text(
-                      'Otomatik Oluşturulan Listeler',
+                      'Auto-Generated Playlists',
                       style: TextStyle(
                         fontSize: ModernDesignSystem.fontSizeL,
                         color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -211,19 +211,19 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
                     const SizedBox(height: 24),
 
                     // Mood Section
-                    _buildSection('Ruh Hali', SmartPlaylistType.mood, isDark),
+                    _buildSection('Mood', SmartPlaylistType.mood, isDark),
                     const SizedBox(height: 24),
 
                     // Genre Section
-                    _buildSection('Türler', SmartPlaylistType.genre, isDark),
+                    _buildSection('Genres', SmartPlaylistType.genre, isDark),
                     const SizedBox(height: 24),
 
                     // Decade Section
-                    _buildSection('Dönemler', SmartPlaylistType.decade, isDark),
+                    _buildSection('Decades', SmartPlaylistType.decade, isDark),
                     const SizedBox(height: 24),
 
                     // Activity Section
-                    _buildSection('Aktiviteler', SmartPlaylistType.activity, isDark),
+                    _buildSection('Activities', SmartPlaylistType.activity, isDark),
                   ],
                 ),
               ),
@@ -272,9 +272,9 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
         // TODO: Navigate to playlist detail or generate actual playlist
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${playlist.title} oluşturuluyor...'),
+            content: Text('Creating ${playlist.title}...'),
             action: SnackBarAction(
-              label: 'Tamam',
+              label: 'OK',
               onPressed: () {},
             ),
           ),
@@ -336,7 +336,7 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${playlist.trackCount} şarkı',
+                    '${playlist.trackCount} songs',
                     style: TextStyle(
                       fontSize: ModernDesignSystem.fontSizeS,
                       color: Colors.white.withValues(alpha: 0.9),
@@ -365,28 +365,28 @@ class _SmartPlaylistsPageState extends State<SmartPlaylistsPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Akıllı Çalma Listeleri'),
+        title: const Text('Smart Playlists'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Akıllı çalma listeleri, dinleme alışkanlıklarınıza ve müzik kütüphanenize göre otomatik olarak oluşturulur.',
+                'Smart playlists are automatically created based on your listening habits and music library.',
                 style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 16),
-              _buildInfoItem('🎭 Ruh Hali', 'Şarkıların enerji ve tempo değerlerine göre'),
-              _buildInfoItem('🎵 Türler', 'Sevdiğiniz müzik türlerine göre'),
-              _buildInfoItem('📅 Dönemler', 'Şarkıların çıkış tarihlerine göre'),
-              _buildInfoItem('🏃 Aktiviteler', 'Farklı aktiviteler için optimize edilmiş'),
+              _buildInfoItem('🎭 Mood', 'Based on song energy and tempo values'),
+              _buildInfoItem('🎵 Genres', 'Based on your favorite music genres'),
+              _buildInfoItem('📅 Decades', 'Based on song release dates'),
+              _buildInfoItem('🏃 Activities', 'Optimized for different activities'),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Anladım'),
+            child: const Text('Got it'),
           ),
         ],
       ),

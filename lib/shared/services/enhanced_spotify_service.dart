@@ -542,6 +542,40 @@ class EnhancedSpotifyService {
     }
   }
 
+  /// Get global popular tracks (not user-specific)
+  static Future<List<Map<String, dynamic>>> getGlobalPopularTracks({
+    int limit = 20,
+  }) async {
+    try {
+      await _checkAndRefreshToken();
+      
+      // Use Spotify search with high popularity to get global popular tracks
+      final response = await _dio.get(
+        '${AppConstants.baseUrl}/search',
+        queryParameters: {
+          'q': 'popularity:>70',  // Highly popular tracks
+          'type': 'track',
+          'limit': limit,
+          'market': 'US',  // Global market
+        },
+        options: Options(
+          headers: {'Authorization': 'Bearer $_accessToken'},
+        ),
+      );
+      
+      if (response.statusCode == 200) {
+        final tracks = response.data['tracks']['items'] as List?;
+        return tracks?.cast<Map<String, dynamic>>() ?? [];
+      }
+      
+      return [];
+    } catch (e) {
+      print('Error fetching global popular tracks: $e');
+      // Fallback to getting new releases if search fails
+      return await getNewReleases(limit: limit);
+    }
+  }
+
   /// Get user's top tracks
   static Future<List<Map<String, dynamic>>> getTopTracks({
     String timeRange = 'medium_term',

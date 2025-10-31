@@ -390,23 +390,23 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Ana Sayfa',
+            label: 'Home',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.explore),
-            label: 'Keşfet',
+            label: 'Discover',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.library_music),
-            label: 'Listeler',
+            label: 'Playlists',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
-            label: 'Mesajlar',
+            label: 'Messages',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profil',
+            label: 'Profile',
           ),
         ],
       ),

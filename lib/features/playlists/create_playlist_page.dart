@@ -58,7 +58,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
             ListTile(
               leading: Icon(Icons.photo_library,
                   color: isDark ? Colors.white : Colors.black87),
-              title: Text('Galeriden Seç',
+              title: Text('Choose from Gallery',
                   style:
                       TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
@@ -69,7 +69,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
             ListTile(
               leading: Icon(Icons.camera_alt,
                   color: isDark ? Colors.white : Colors.black87),
-              title: Text('Fotoğraf Çek',
+              title: Text('Take Photo',
                   style:
                       TextStyle(color: isDark ? Colors.white : Colors.black87)),
               onTap: () {
@@ -81,7 +81,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
               ListTile(
                 leading:
                     const Icon(Icons.delete, color: Colors.red),
-                title: const Text('Resmi Kaldır',
+                title: const Text('Remove Image',
                     style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
@@ -113,7 +113,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
       if (!mounted) return;
       setState(() => _isCreating = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Playlist oluşturulamadı')),
+        const SnackBar(content: Text('Failed to create playlist')),
       );
       return;
     }
@@ -140,12 +140,12 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
 
     if (playlistId != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Playlist oluşturuldu!')),
+        const SnackBar(content: Text('Playlist created successfully!')),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Playlist oluşturulamadı')),
+        const SnackBar(content: Text('Failed to create playlist')),
       );
     }
   }
@@ -155,10 +155,10 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
     const allTags = [
       'rock', 'pop', 'jazz', 'classical', 'electronic',
       'hip-hop', 'r&b', 'country', 'metal', 'indie',
-      '90lar', '2000ler', 'yeni', 'nostalji',
-      'party', 'chill', 'workout', 'çalışma', 'uyku',
+      '90s', '2000s', 'new', 'nostalgia',
+      'party', 'chill', 'workout', 'study', 'sleep',
       'romantic', 'sad', 'happy', 'energetic', 'mellow',
-      'türkçe', 'yabancı', 'acoustic', 'remix',
+      'turkish', 'international', 'acoustic', 'remix',
     ];
     
     // Return tags that aren't already added
@@ -175,7 +175,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         title: Text(
-          'Yeni Playlist',
+          'New Playlist',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 20,
@@ -226,7 +226,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Kapak Resmi Ekle',
+                              'Add Cover Image',
                               style: TextStyle(
                                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                                 fontSize: 14,
@@ -242,7 +242,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
               controller: _titleController,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
-                labelText: 'Playlist Adı *',
+                labelText: 'Playlist Name *',
                 labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 filled: true,
                 fillColor: isDark ? Colors.grey[850] : Colors.white,
@@ -253,7 +253,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Playlist adı gerekli';
+                  return 'Playlist name is required';
                 }
                 return null;
               },
@@ -264,7 +264,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               maxLines: 4,
               decoration: InputDecoration(
-                labelText: 'Açıklama (İsteğe bağlı)',
+                labelText: 'Description (Optional)',
                 labelStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 filled: true,
                 fillColor: isDark ? Colors.grey[850] : Colors.white,
@@ -278,7 +278,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
             
             // Tags Input
             Text(
-              'Etiketler',
+              'Tags',
               style: TextStyle(
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                 fontSize: 14,
@@ -320,7 +320,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
                     controller: _tagController,
                     style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                     decoration: InputDecoration(
-                      hintText: 'Etiket ekle (örn: rock, 90lar, party)',
+                      hintText: 'Add tag (e.g.: rock, 90s, party)',
                       hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                       filled: true,
                       fillColor: isDark ? Colors.grey[850] : Colors.white,
@@ -383,13 +383,13 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
             const SizedBox(height: 16),
             SwitchListTile(
               title: Text(
-                'Herkese Açık',
+                'Public',
                 style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               ),
               subtitle: Text(
                 _isPublic
-                    ? 'Herkes bu playlist\'i görebilir'
-                    : 'Sadece sen görebilirsin',
+                    ? 'Everyone can see this playlist'
+                    : 'Only you can see this playlist',
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   fontSize: 12,
@@ -424,7 +424,7 @@ class _CreatePlaylistPageState extends State<CreatePlaylistPage> {
                         ),
                       )
                     : const Text(
-                        'Oluştur',
+                        'Create',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

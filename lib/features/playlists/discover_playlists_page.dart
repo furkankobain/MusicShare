@@ -22,7 +22,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
 
   final List<String> _popularTags = [
     'rock', 'pop', 'jazz', 'electronic', 'hip-hop',
-    'party', 'chill', 'workout', 'türkçe', 'yabancı',
+    'party', 'chill', 'workout', 'turkish', 'international',
   ];
 
   @override
@@ -79,7 +79,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
       setState(() => _isSearching = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Arama hatası: ${e.toString()}'),
+          content: Text('Search error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
@@ -96,7 +96,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         title: Text(
-          'Playlistleri Keşfet',
+          'Discover Playlists',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 20,
@@ -106,16 +106,16 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'QR Kod Tara',
+            tooltip: 'Scan QR Code',
             onPressed: () async {
               final playlistId = await context.push('/qr-scanner');
               if (playlistId != null && mounted) {
                 // TODO: Fetch and show playlist by ID
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Playlist bulundu: $playlistId'),
+                    content: Text('Playlist found: $playlistId'),
                     action: SnackBarAction(
-                      label: 'Aç',
+                      label: 'Open',
                       onPressed: () {
                         // Navigate to playlist
                       },
@@ -138,7 +138,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
                   onChanged: _onSearchChanged,
                   style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   decoration: InputDecoration(
-                    hintText: 'Playlist ara...',
+                    hintText: 'Search playlists...',
                     hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                     filled: true,
@@ -158,9 +158,9 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
                 labelColor: AppTheme.primaryColor,
                 unselectedLabelColor: isDark ? Colors.grey[400] : Colors.grey[600],
                 tabs: const [
-                  Tab(text: 'Trend'),
-                  Tab(text: 'Yeni'),
-                  Tab(text: 'Popüler'),
+                  Tab(text: 'Trending'),
+                  Tab(text: 'New'),
+                  Tab(text: 'Popular'),
                 ],
               ),
             ],
@@ -197,7 +197,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Popüler Etiketler',
+            'Popular Tags',
             style: TextStyle(
               color: isDark ? Colors.white : Colors.black87,
               fontSize: 16,
@@ -249,7 +249,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
             ),
             const SizedBox(height: 16),
             Text(
-              'Sonuç bulunamadı',
+              'No results found',
               style: TextStyle(
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                 fontSize: 16,
@@ -353,7 +353,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${playlist.trackIds.length} şarkı',
+                        '${playlist.trackIds.length} songs',
                         style: TextStyle(
                           color: isDark ? Colors.grey[400] : Colors.grey[600],
                           fontSize: 12,
@@ -418,7 +418,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
           ),
           const SizedBox(height: 16),
           Text(
-            'Çok Yakında',
+            'Coming Soon',
             style: TextStyle(
               color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 18,
@@ -427,7 +427,7 @@ class _DiscoverPlaylistsPageState extends State<DiscoverPlaylistsPage> with Sing
           ),
           const SizedBox(height: 8),
           Text(
-            'Bu özellik üzerinde çalışıyoruz',
+            'We are working on this feature',
             style: TextStyle(
               color: isDark ? Colors.grey[500] : Colors.grey[500],
               fontSize: 14,

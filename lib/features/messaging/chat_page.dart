@@ -434,7 +434,7 @@ class _ChatPageState extends State<ChatPage> {
         currentUserId: _currentUserId,
         onReply: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Yanıtlama özelliği yakında...')),
+            const SnackBar(content: Text('Reply feature coming soon...')),
           );
         },
         onDelete: () async {

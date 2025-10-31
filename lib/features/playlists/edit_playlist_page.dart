@@ -267,7 +267,7 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Kapak Ekle',
+                                  'Add Cover',
                                   style: TextStyle(
                                     color: isDark ? Colors.grey[400] : Colors.grey[600],
                                   ),
@@ -284,8 +284,8 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
             TextFormField(
               controller: _titleController,
               decoration: InputDecoration(
-                labelText: 'Playlist Adı',
-                hintText: 'Müzik listenize bir ad verin',
+                labelText: 'Playlist Name',
+                hintText: 'Give your music list a name',
                 prefixIcon: const Icon(Icons.title),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
@@ -293,7 +293,7 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Lütfen bir ad girin';
+                  return 'Please enter a name';
                 }
                 return null;
               },
@@ -305,8 +305,8 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
             TextFormField(
               controller: _descriptionController,
               decoration: InputDecoration(
-                labelText: 'Açıklama (İsteğe bağlı)',
-                hintText: 'Playlist hakkında bilgi ekleyin',
+                labelText: 'Description (Optional)',
+                hintText: 'Add information about the playlist',
                 prefixIcon: const Icon(Icons.description),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
@@ -320,7 +320,7 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
             // Privacy Toggle
             SwitchListTile(
               title: Text(
-                'Herkese Açık',
+                'Public',
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.black87,
                   fontWeight: FontWeight.w600,
@@ -328,8 +328,8 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
               ),
               subtitle: Text(
                 _isPublic
-                    ? 'Herkes bu playlist\'i görebilir'
-                    : 'Sadece sen görebilirsin',
+                    ? 'Everyone can see this playlist'
+                    : 'Only you can see this playlist',
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                 ),
@@ -347,7 +347,7 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
 
             // Tags Section
             Text(
-              'Etiketler',
+              'Tags',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -380,7 +380,7 @@ class _EditPlaylistPageState extends State<EditPlaylistPage> {
                 Expanded(
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'Etiket ekle',
+                      hintText: 'Add tag',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(ModernDesignSystem.radiusM),
                       ),

@@ -111,7 +111,7 @@ class _AddTrackBottomSheetState extends State<AddTrackBottomSheet> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Şarkı eklenemedi'),
+          content: Text('Failed to add track'),
           backgroundColor: Colors.red,
         ),
       );
@@ -151,7 +151,7 @@ class _AddTrackBottomSheetState extends State<AddTrackBottomSheet> {
             child: Row(
               children: [
                 Text(
-                  'Şarkı Ekle',
+                  'Add Song',
                   style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                     fontSize: 20,
@@ -175,7 +175,7 @@ class _AddTrackBottomSheetState extends State<AddTrackBottomSheet> {
               onChanged: _onSearchChanged,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
-                hintText: 'Şarkı ara...',
+                hintText: 'Search songs...',
                 hintStyle: TextStyle(color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 prefixIcon: Icon(Icons.search, color: isDark ? Colors.grey[400] : Colors.grey[600]),
                 filled: true,
@@ -208,8 +208,8 @@ class _AddTrackBottomSheetState extends State<AddTrackBottomSheet> {
                             const SizedBox(height: 16),
                             Text(
                               _searchController.text.isEmpty
-                                  ? 'Şarkı aramak için yazın'
-                                  : 'Sonuç bulunamadı',
+                                  ? 'Type to search for songs'
+                                  : 'No results found',
                               style: TextStyle(
                                 color: isDark ? Colors.grey[400] : Colors.grey[600],
                                 fontSize: 16,

@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 
 class ModernDesignSystem {
   // Modern Color Palette - Enhanced
-  static const Color primaryGreen = Color(0xFF00D856);
-  static const Color secondaryGreen = Color(0xFF1ED760);
+  static const Color primaryGreen = Color(0xFFFF5E5E);  // Changed to red
+  static const Color secondaryGreen = Color(0xFFFF5E5E);  // Changed to red
   static const Color accentPurple = Color(0xFF9333EA);
   static const Color accentBlue = Color(0xFF0EA5E9);
   static const Color accentOrange = Color(0xFFFF6B35);
   static const Color accentPink = Color(0xFFEC4899);
   static const Color accentTeal = Color(0xFF14B8A6);
   static const Color accentYellow = Color(0xFFFBBF24);
+  
+  // Logo Background Color
+  static const Color logoBackground = Color(0xFF46484D);
   
   // Dark Theme Colors - More depth
   static const Color darkBackground = Color(0xFF000000);

@@ -777,7 +777,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Ne kadar süreyle susturulsun?',
+                    'How long would you like to mute this conversation?',
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87,
                       fontSize: 16,
@@ -788,7 +788,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 
                 ListTile(
                   title: Text(
-                    '8 Saat',
+                    '8 Hours',
                     style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   ),
                   onTap: () async {
@@ -799,7 +799,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('8 saat süreyle susturuldu')),
+                        const SnackBar(content: Text('Muted for 8 hours')),
                       );
                     }
                   },
@@ -807,7 +807,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 
                 ListTile(
                   title: Text(
-                    '1 Hafta',
+                    '1 Week',
                     style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   ),
                   onTap: () async {
@@ -818,7 +818,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('1 hafta süreyle susturuldu')),
+                        const SnackBar(content: Text('Muted for 1 week')),
                       );
                     }
                   },
@@ -826,7 +826,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                 
                 ListTile(
                   title: Text(
-                    'Her Zaman',
+                    'Forever',
                     style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                   ),
                   onTap: () async {
@@ -837,7 +837,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
                     );
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Kalıcı olarak susturuldu')),
+                        const SnackBar(content: Text('Permanently muted')),
                       );
                     }
                   },
@@ -864,7 +864,7 @@ class _ConversationsPageState extends State<ConversationsPage> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Bir hata oluştu',
+            'An error occurred',
             style: TextStyle(
               color: isDark ? Colors.grey[400] : Colors.grey[600],
               fontSize: 18,

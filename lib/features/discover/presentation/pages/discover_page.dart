@@ -44,7 +44,7 @@ class _DiscoverPageState extends ConsumerState<DiscoverPage> with SingleTickerPr
     try {
       final results = await Future.wait([
         EnhancedSpotifyService.getNewReleases(limit: 20),
-        EnhancedSpotifyService.getTopTracks(limit: 20),
+        EnhancedSpotifyService.getGlobalPopularTracks(limit: 20),
         EnhancedSpotifyService.getFeaturedPlaylists(limit: 10),
         EnhancedSpotifyService.getCategories(limit: 12),
       ]);

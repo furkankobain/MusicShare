@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 
 class AppTheme {
   // Color Palette
-  static const Color primaryColor = Color(0xFF1DB954); // Spotify Green
+  static const Color primaryColor = Color(0xFFFF5E5E); // Changed to Red
   static const Color secondaryColor = Color(0xFF191414); // Spotify Black
-  static const Color accentColor = Color(0xFF1ED760); // Spotify Light Green
+  static const Color accentColor = Color(0xFFFF5E5E); // Changed to Red
   static const Color backgroundColor = Color(0xFF121212);
   static const Color surfaceColor = Color(0xFF1E1E1E);
   static const Color cardColor = Color(0xFF2C2C2C);
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFB3B3B3);
   static const Color errorColor = Color(0xFFE22134);
+  static const Color logoBackground = Color(0xFF46484D); // Logo background color
 
   static ThemeData get lightTheme {
     return ThemeData(

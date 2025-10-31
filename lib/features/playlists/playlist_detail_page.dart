@@ -231,7 +231,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 ),
               const PopupMenuItem(
                 value: 'delete',
-                child: Text('Sil', style: TextStyle(color: Colors.red)),
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -314,7 +314,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                '${_playlist.trackIds.length} şarkı',
+                '${_playlist.trackIds.length} songs',
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   fontSize: 14,
@@ -328,7 +328,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               ),
               const SizedBox(width: 4),
               Text(
-                _playlist.isPublic ? 'Herkese Açık' : 'Özel',
+                _playlist.isPublic ? 'Public' : 'Private',
                 style: TextStyle(
                   color: isDark ? Colors.grey[400] : Colors.grey[600],
                   fontSize: 14,
@@ -346,7 +346,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
               onPressed: _showAddTrackSheet,
               icon: const Icon(Icons.add, color: Colors.white),
               label: const Text(
-                'Şarkı Ekle',
+                'Add Song',
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
@@ -378,7 +378,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Henüz şarkı eklenmedi',
+                    'No songs added yet',
                     style: TextStyle(
                       color: isDark ? Colors.grey[400] : Colors.grey[600],
                       fontSize: 16,

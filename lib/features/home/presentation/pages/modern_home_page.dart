@@ -66,7 +66,7 @@ class ModernHomePage extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'Müzik dünyanızı keşfedin',
+              'Explore your music universe',
               style: TextStyle(
                 fontSize: 16,
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
@@ -122,7 +122,7 @@ class ModernHomePage extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           const Text(
-            'MusicBoxd\'a Hoş Geldiniz!',
+            'Welcome to MusicBoxd!',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -131,7 +131,7 @@ class ModernHomePage extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Müziklerinizi değerlendirin, keşfedin ve paylaşın',
+            'Rate, discover and share your music',
             style: TextStyle(
               color: Colors.white70,
               fontSize: 14,
@@ -149,7 +149,7 @@ class ModernHomePage extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text('Keşfetmeye Başla'),
+            child: const Text('Start Exploring'),
           ),
         ],
       ),
@@ -161,7 +161,7 @@ class ModernHomePage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Hızlı İşlemler',
+          'Quick Actions',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -176,7 +176,7 @@ class ModernHomePage extends ConsumerWidget {
                 context,
                 icon: Icons.dynamic_feed,
                 title: 'Feed',
-                subtitle: 'Sosyal akış',
+                subtitle: 'Social feed',
                 color: Colors.blue,
                 onTap: () {
                   context.push('/feed');
@@ -188,8 +188,8 @@ class ModernHomePage extends ConsumerWidget {
               child: _buildActionCard(
                 context,
                 icon: Icons.book,
-                title: 'Günlük',
-                subtitle: 'Dinleme geçmişi',
+                title: 'Diary',
+                subtitle: 'Listening history',
                 color: Colors.green,
                 onTap: () {
                   context.push('/diary');
@@ -205,8 +205,8 @@ class ModernHomePage extends ConsumerWidget {
               child: _buildActionCard(
                 context,
                 icon: Icons.playlist_play,
-                title: 'Listeler',
-                subtitle: 'Müzik listeleri',
+                title: 'Lists',
+                subtitle: 'Music lists',
                 color: Colors.orange,
                 onTap: () {
                   context.push('/lists');
@@ -218,8 +218,8 @@ class ModernHomePage extends ConsumerWidget {
               child: _buildActionCard(
                 context,
                 icon: Icons.star,
-                title: 'Puanlarım',
-                subtitle: 'Değerlendirmeler',
+                title: 'My Ratings',
+                subtitle: 'Ratings',
                 color: Colors.purple,
                 onTap: () {
                   context.push('/my-ratings');

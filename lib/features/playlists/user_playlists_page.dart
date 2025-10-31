@@ -26,7 +26,7 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
         backgroundColor: isDark ? Colors.grey[900] : Colors.white,
         elevation: 0,
         title: Text(
-          'Playlistlerim',
+          'My Playlists',
           style: TextStyle(
             color: isDark ? Colors.white : Colors.black87,
             fontSize: 20,
@@ -95,13 +95,13 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterChip('Tümü', 'all', isDark),
+            _buildFilterChip('All', 'all', isDark),
             const SizedBox(width: 12),
-            _buildFilterChip('Yerel', 'local', isDark),
+            _buildFilterChip('Local', 'local', isDark),
             const SizedBox(width: 12),
             _buildFilterChip('Spotify', 'spotify', isDark),
             const SizedBox(width: 12),
-            _buildFilterChip('Senkronize', 'synced', isDark),
+            _buildFilterChip('Synced', 'synced', isDark),
           ],
         ),
       ),
@@ -196,7 +196,7 @@ class _UserPlaylistsPageState extends State<UserPlaylistsPage> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${playlist.trackIds.length} şarkı',
+                          '${playlist.trackIds.length} songs',
                           style: TextStyle(
                             color: isDark ? Colors.grey[400] : Colors.grey[600],
                             fontSize: 13,
