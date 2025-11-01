@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/firebase_bypass_auth_service.dart';
 import '../../../../shared/services/haptic_service.dart';
+import '../../../../shared/services/feed_service.dart';
 
 class AddReviewPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> item;
@@ -87,6 +88,7 @@ class _AddReviewPageState extends ConsumerState<AddReviewPage> {
         throw Exception('User not logged in');
       }
 
+      // Save review
       await FirebaseFirestore.instance.collection('reviews').add({
         'userId': userId,
         'username': username ?? 'Anonymous',
@@ -101,6 +103,21 @@ class _AddReviewPageState extends ConsumerState<AddReviewPage> {
         'likes': 0,
         'likedBy': [],
       });
+
+      // Create activity for feed
+      await FeedService.createActivity(
+        type: 'review',
+        contentId: widget.item['id'] as String,
+        contentData: {
+          'name': _itemName,
+          'type': widget.itemType,
+          'imageUrl': _itemImageUrl,
+          'subtitle': _itemSubtitle,
+        },
+        reviewText: _reviewController.text.trim(),
+        rating: _rating,
+        isPublic: true,
+      );
 
       if (mounted) {
         HapticService.heavyImpact();

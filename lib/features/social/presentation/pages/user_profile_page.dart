@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/firebase_bypass_auth_service.dart';
+import '../../../../shared/services/follow_service.dart';
+import '../../../../shared/services/feed_service.dart';
+import '../../../../shared/models/activity_item.dart';
 
 class UserProfilePage extends StatefulWidget {
   final String userId;
@@ -26,6 +30,8 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
   int _followingCount = 0;
   int _reviewsCount = 0;
   int _listsCount = 0;
+  List<ActivityItem> _userActivities = [];
+  Map<String, dynamic>? _userData;
 
   @override
   void initState() {
@@ -44,35 +50,114 @@ class _UserProfilePageState extends State<UserProfilePage> with SingleTickerProv
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Load from Firestore
-      // Mock data for now
-      await Future.delayed(const Duration(seconds: 1));
+      final currentUserId = FirebaseBypassAuthService.currentUserId;
       
-      setState(() {
-        _followersCount = 125;
-        _followingCount = 87;
-        _reviewsCount = 42;
-        _listsCount = 8;
-        _isLoading = false;
-      });
+      // Load user data
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .get();
+      
+      if (userDoc.exists) {
+        _userData = userDoc.data();
+      }
+
+      // Load follower/following counts
+      final followersSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('followers')
+          .get();
+      
+      final followingSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('following')
+          .get();
+
+      // Load reviews count
+      final reviewsSnapshot = await FirebaseFirestore.instance
+          .collection('reviews')
+          .where('userId', isEqualTo: widget.userId)
+          .get();
+
+      // Load user activities
+      final activities = await FeedService.getUserActivities(
+        userId: widget.userId,
+        limit: 20,
+      );
+
+      // Check if current user follows this user
+      if (currentUserId != null && currentUserId != widget.userId) {
+        final followDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .collection('following')
+            .doc(widget.userId)
+            .get();
+        
+        _isFollowing = followDoc.exists;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _followersCount = followersSnapshot.docs.length;
+          _followingCount = followingSnapshot.docs.length;
+          _reviewsCount = reviewsSnapshot.docs.length;
+          _listsCount = 0; // TODO: Load playlists count
+          _userActivities = activities;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print('Error loading user profile: $e');
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _toggleFollow() async {
+    final wasFollowing = _isFollowing;
     setState(() => _isFollowing = !_isFollowing);
     
+    bool success;
     if (_isFollowing) {
-      setState(() => _followersCount++);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${widget.username} takip edildi')),
-      );
+      success = await FollowService.followUser(widget.userId);
+      if (success) {
+        setState(() => _followersCount++);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${widget.username} takip edildi'),
+              backgroundColor: ModernDesignSystem.primaryGreen,
+            ),
+          );
+        }
+      }
     } else {
-      setState(() => _followersCount--);
+      success = await FollowService.unfollowUser(widget.userId);
+      if (success) {
+        setState(() => _followersCount--);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${widget.username} takipten çıkarıldı'),
+              backgroundColor: Colors.grey,
+            ),
+          );
+        }
+      }
+    }
+
+    // Revert if failed
+    if (!success && mounted) {
+      setState(() => _isFollowing = wasFollowing);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${widget.username} takipten çıkarıldı')),
+        const SnackBar(
+          content: Text('İşlem başarısız'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

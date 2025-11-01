@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../../../../shared/models/activity_item.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/empty_state_widget.dart';
+import '../../../../shared/services/feed_service.dart';
 
 class SocialFeedPage extends ConsumerStatefulWidget {
   const SocialFeedPage({super.key});
@@ -17,12 +18,36 @@ class SocialFeedPage extends ConsumerStatefulWidget {
 
 class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<ActivityItem> _allFeed = [];
+  List<ActivityItem> _followingFeed = [];
+  List<ActivityItem> _popularFeed = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     initializeDateFormatting('tr_TR', null);
     _tabController = TabController(length: 3, vsync: this);
+    _loadFeeds();
+  }
+
+  Future<void> _loadFeeds() async {
+    setState(() => _isLoading = true);
+    
+    final results = await Future.wait([
+      FeedService.getGlobalFeed(),
+      FeedService.getFollowingFeed(),
+      FeedService.getPopularFeed(),
+    ]);
+
+    if (mounted) {
+      setState(() {
+        _allFeed = results[0];
+        _followingFeed = results[1];
+        _popularFeed = results[2];
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -74,10 +99,17 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
   }
 
   Widget _buildFeedList(bool isDark, String feedType) {
-    // Mock data - gerçek uygulamada Firestore'dan gelecek
-    final mockActivities = _getMockActivities();
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    if (mockActivities.isEmpty) {
+    final activities = feedType == 'all'
+        ? _allFeed
+        : feedType == 'following'
+            ? _followingFeed
+            : _popularFeed;
+
+    if (activities.isEmpty) {
       late String title;
       late String description;
       
@@ -103,15 +135,12 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        // TODO: Refresh feed
-        await Future.delayed(const Duration(seconds: 1));
-      },
+      onRefresh: _loadFeeds,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: mockActivities.length,
+        itemCount: activities.length,
         itemBuilder: (context, index) {
-          return _buildActivityCard(mockActivities[index], isDark);
+          return _buildActivityCard(activities[index], isDark);
         },
       ),
     );
@@ -221,21 +250,28 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
                 _buildActionButton(
                   icon: Icons.favorite_border,
                   label: activity.likeCount.toString(),
-                  onTap: () {},
+                  onTap: () async {
+                    await FeedService.likeActivity(activity.id);
+                    await _loadFeeds();
+                  },
                   isDark: isDark,
                 ),
                 const SizedBox(width: 16),
                 _buildActionButton(
                   icon: Icons.comment_outlined,
                   label: activity.commentCount.toString(),
-                  onTap: () {},
+                  onTap: () {
+                    // TODO: Show comments dialog
+                  },
                   isDark: isDark,
                 ),
                 const SizedBox(width: 16),
                 _buildActionButton(
                   icon: Icons.share_outlined,
                   label: 'Paylaş',
-                  onTap: () {},
+                  onTap: () {
+                    // TODO: Share activity
+                  },
                   isDark: isDark,
                 ),
               ],

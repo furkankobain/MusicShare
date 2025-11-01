@@ -10,6 +10,7 @@ import '../../../../shared/services/favorites_service.dart';
 import '../../../../shared/services/profile_service.dart';
 import '../../../../shared/services/rating_aggregation_service.dart';
 import '../../../../shared/services/rating_cache_service.dart';
+import '../../../../shared/services/lyrics_service.dart';
 import '../../../../shared/widgets/aggregated_rating_display.dart';
 import '../widgets/track_recommendations_widget.dart';
 
@@ -36,6 +37,12 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
   bool _isLoadingAudio = false;
   AggregatedRating? _aggregatedRating;
   bool _isLoadingRating = true;
+  LyricsData? _lyricsData;
+  bool _isLoadingLyrics = false;
+  final TextEditingController _lyricsSearchController = TextEditingController();
+  final ScrollController _lyricsScrollController = ScrollController();
+  String _lyricsSearchQuery = '';
+  List<int> _searchResultIndices = [];
 
   @override
   void initState() {
@@ -45,11 +52,14 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     _checkPinnedStatus();
     _setupAudioPlayer();
     _loadAggregatedRating();
+    _loadLyrics();
   }
 
   @override
   void dispose() {
     _audioPlayer.dispose();
+    _lyricsSearchController.dispose();
+    _lyricsScrollController.dispose();
     super.dispose();
   }
 
@@ -97,6 +107,34 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     } else {
       if (mounted) {
         setState(() => _isLoadingRating = false);
+      }
+    }
+  }
+
+  Future<void> _loadLyrics() async {
+    final trackName = widget.track['name'] as String?;
+    final artistName = (widget.track['artists'] as List?)?.first?['name'] as String?;
+
+    if (trackName != null && artistName != null) {
+      setState(() => _isLoadingLyrics = true);
+
+      try {
+        final lyrics = await LyricsService.fetchLyrics(
+          trackName: trackName,
+          artistName: artistName,
+        );
+
+        if (mounted) {
+          setState(() {
+            _lyricsData = lyrics;
+            _isLoadingLyrics = false;
+          });
+        }
+      } catch (e) {
+        print('Error loading lyrics: $e');
+        if (mounted) {
+          setState(() => _isLoadingLyrics = false);
+        }
       }
     }
   }
@@ -782,6 +820,7 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
             ),
       child: ExpansionTile(
         tilePadding: const EdgeInsets.all(20),
+        initiallyExpanded: _lyricsData != null,
         title: Row(
           children: [
             Icon(
@@ -797,44 +836,210 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
                 color: isDark ? Colors.white : Colors.black87,
               ),
             ),
+            if (_isLoadingLyrics) ...[
+              const SizedBox(width: 12),
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         children: [
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Lyrics not available',
-                  style: TextStyle(
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    // TODO: Add lyrics API integration
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Lyrics feature coming soon!'),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Lyrics'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFF5E5E),
-                    side: const BorderSide(color: Color(0xFFFF5E5E)),
-                  ),
-                ),
-              ],
-            ),
+            child: _buildLyricsContent(isDark),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLyricsContent(bool isDark) {
+    if (_isLoadingLyrics) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_lyricsData == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Lyrics not available',
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontSize: 14,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _loadLyrics,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFFF5E5E),
+              side: const BorderSide(color: Color(0xFFFF5E5E)),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Source indicator
+        Row(
+          children: [
+            Icon(
+              Icons.verified,
+              size: 16,
+              color: ModernDesignSystem.primaryGreen,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Source: ${_lyricsData!.source}',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            if (_lyricsData!.url != null)
+              TextButton.icon(
+                onPressed: () async {
+                  final url = _lyricsData!.url;
+                  if (url != null) {
+                    final uri = Uri.parse(url);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  }
+                },
+                icon: const Icon(Icons.open_in_new, size: 14),
+                label: const Text('View Full'),
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFFF5E5E),
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Search bar
+        TextField(
+          controller: _lyricsSearchController,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
+          decoration: InputDecoration(
+            hintText: 'Search in lyrics...',
+            hintStyle: TextStyle(color: Colors.grey[500]),
+            prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+            suffixIcon: _lyricsSearchQuery.isNotEmpty
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchResultIndices.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Text(
+                            '${_searchResultIndices.length} found',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ),
+                      IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _lyricsSearchController.clear();
+                          setState(() {
+                            _lyricsSearchQuery = '';
+                            _searchResultIndices = [];
+                          });
+                        },
+                      ),
+                    ],
+                  )
+                : null,
+            filled: true,
+            fillColor: isDark ? Colors.grey[850] : Colors.grey[100],
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFFFF5E5E),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          onChanged: (value) {
+            setState(() {
+              _lyricsSearchQuery = value;
+              if (value.isNotEmpty) {
+                final lines = _lyricsData!.lyrics.split('\n');
+                _searchResultIndices = [];
+                for (var i = 0; i < lines.length; i++) {
+                  if (lines[i].toLowerCase().contains(value.toLowerCase())) {
+                    _searchResultIndices.add(i);
+                  }
+                }
+              } else {
+                _searchResultIndices = [];
+              }
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        
+        // Lyrics text with highlighting
+        Container(
+          constraints: const BoxConstraints(maxHeight: 400),
+          child: SingleChildScrollView(
+            controller: _lyricsScrollController,
+            child: _buildHighlightedLyrics(isDark),
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Action buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _loadLyrics,
+              icon: const Icon(Icons.refresh, size: 16),
+              label: const Text('Refresh'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: isDark ? Colors.grey[400] : Colors.grey[700],
+                side: BorderSide(
+                  color: isDark ? Colors.grey[600]! : Colors.grey[400]!,
+                ),
+                textStyle: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -876,5 +1081,48 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds.remainder(60);
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildHighlightedLyrics(bool isDark) {
+    if (_lyricsSearchQuery.isEmpty) {
+      return Text(
+        _lyricsData!.lyrics,
+        style: TextStyle(
+          fontSize: 15,
+          height: 1.6,
+          color: isDark ? Colors.grey[300] : Colors.black87,
+          fontFamily: 'monospace',
+        ),
+      );
+    }
+
+    final lines = _lyricsData!.lyrics.split('\n');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: lines.asMap().entries.map((entry) {
+        final index = entry.key;
+        final line = entry.value;
+        final isHighlighted = _searchResultIndices.contains(index);
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 2),
+          color: isHighlighted
+              ? const Color(0xFFFF5E5E).withOpacity(0.2)
+              : Colors.transparent,
+          child: Text(
+            line.isEmpty ? ' ' : line,
+            style: TextStyle(
+              fontSize: 15,
+              height: 1.6,
+              color: isHighlighted
+                  ? (isDark ? Colors.white : Colors.black)
+                  : (isDark ? Colors.grey[300] : Colors.black87),
+              fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
+              fontFamily: 'monospace',
+            ),
+          ),
+        );
+      }).toList(),
+    );
   }
 }

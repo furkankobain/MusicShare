@@ -3,14 +3,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for fetching and caching song lyrics
-/// Supports multiple providers: Genius, Musixmatch (mock), and fallback
+/// Uses multiple free APIs with fallback
 class LyricsService {
   static const String _cacheKeyPrefix = 'lyrics_cache_';
   static const Duration _cacheDuration = Duration(days: 30);
 
-  // Mock API endpoints (replace with real ones)
-  static const String _geniusApiUrl = 'https://api.genius.com';
-  static const String _geniusAccessToken = 'YOUR_GENIUS_API_KEY'; // TODO: Add real key
+  // Free lyrics APIs
+  static const String _lyricsOvhUrl = 'https://api.lyrics.ovh/v1';
+  static const String _lyristUrl = 'https://lyrist.vercel.app/api';
 
   /// Fetch lyrics for a track
   static Future<LyricsData?> fetchLyrics({
@@ -25,138 +25,110 @@ class LyricsService {
       return cachedLyrics;
     }
 
-    // Try fetching from Genius
+    // Try multiple APIs in order
+    // 1. Try lyrics.ovh
     try {
-      final geniusLyrics = await _fetchFromGenius(trackName, artistName);
-      if (geniusLyrics != null) {
-        await _saveToCache(cacheKey, geniusLyrics);
-        return geniusLyrics;
+      final lyrics = await _fetchFromLyricsOvh(trackName, artistName);
+      if (lyrics != null) {
+        await _saveToCache(cacheKey, lyrics);
+        return lyrics;
       }
     } catch (e) {
-      print('Error fetching from Genius: $e');
+      print('lyrics.ovh error: $e');
     }
 
-    // Fallback to mock lyrics
-    final mockLyrics = _getMockLyrics(trackName, artistName);
-    await _saveToCache(cacheKey, mockLyrics);
-    return mockLyrics;
+    // 2. Try Lyrist API
+    try {
+      final lyrics = await _fetchFromLyrist(trackName, artistName);
+      if (lyrics != null) {
+        await _saveToCache(cacheKey, lyrics);
+        return lyrics;
+      }
+    } catch (e) {
+      print('Lyrist API error: $e');
+    }
+
+    print('No lyrics found for: $trackName by $artistName');
+    return null;
   }
 
-  /// Fetch lyrics from Genius API
-  static Future<LyricsData?> _fetchFromGenius(
+  /// Fetch lyrics from lyrics.ovh API (free, no API key needed)
+  static Future<LyricsData?> _fetchFromLyricsOvh(
     String trackName,
     String artistName,
   ) async {
     try {
-      // Search for the song
-      final searchUrl = Uri.parse(
-        '$_geniusApiUrl/search?q=${Uri.encodeComponent('$trackName $artistName')}',
+      // Clean up artist and track names
+      final cleanArtist = artistName.trim();
+      final cleanTrack = trackName.trim();
+      
+      final url = Uri.parse(
+        '$_lyricsOvhUrl/$cleanArtist/$cleanTrack',
+      );
+      
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
       );
 
-      final searchResponse = await http.get(
-        searchUrl,
-        headers: {'Authorization': 'Bearer $_geniusAccessToken'},
-      );
-
-      if (searchResponse.statusCode == 200) {
-        final searchData = json.decode(searchResponse.body);
-        final hits = searchData['response']['hits'] as List;
-
-        if (hits.isNotEmpty) {
-          final songPath = hits[0]['result']['path'];
-          
-          // Note: Genius API doesn't provide lyrics directly
-          // You would need to scrape the web page or use a third-party service
-          // For now, return mock data with Genius URL
-          
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final lyrics = data['lyrics'] as String?;
+        
+        if (lyrics != null && lyrics.isNotEmpty) {
           return LyricsData(
             trackName: trackName,
             artistName: artistName,
-            lyrics: _generateMockLyrics(trackName),
+            lyrics: lyrics.trim(),
             syncedLyrics: null,
-            source: 'Genius',
-            url: 'https://genius.com$songPath',
+            source: 'lyrics.ovh',
+            url: null,
           );
         }
+      } else {
+        print('Lyrics API error: ${response.statusCode}');
       }
     } catch (e) {
-      print('Genius API error: $e');
+      print('Lyrics.ovh API error: $e');
     }
     return null;
   }
 
-  /// Generate mock lyrics (for demo purposes)
-  static String _generateMockLyrics(String trackName) {
-    return '''[Verse 1]
-This is the beginning of $trackName
-A beautiful melody that flows through time
-Every note, every word, perfectly aligned
-In this moment, everything feels fine
+  /// Fetch lyrics from Lyrist API (alternative free API)
+  static Future<LyricsData?> _fetchFromLyrist(
+    String trackName,
+    String artistName,
+  ) async {
+    try {
+      final cleanArtist = artistName.trim();
+      final cleanTrack = trackName.trim();
+      
+      final url = Uri.parse(
+        '$_lyristUrl/$cleanArtist/$cleanTrack',
+      );
+      
+      final response = await http.get(url).timeout(
+        const Duration(seconds: 10),
+      );
 
-[Chorus]
-$trackName, oh $trackName
-You're the rhythm in my heart
-$trackName, sweet $trackName
-Been with me right from the start
-
-[Verse 2]
-As the music plays on and on
-I find myself lost in your song
-Every beat, every chord feels so strong
-This is where I truly belong
-
-[Chorus]
-$trackName, oh $trackName
-You're the rhythm in my heart
-$trackName, sweet $trackName
-Been with me right from the start
-
-[Bridge]
-When the world feels cold and gray
-Your melody guides my way
-Through the darkest night and brightest day
-$trackName will forever stay
-
-[Outro]
-$trackName, $trackName
-Forever in my soul
-$trackName, $trackName
-You make me feel whole''';
-  }
-
-  /// Get mock lyrics data
-  static LyricsData _getMockLyrics(String trackName, String artistName) {
-    return LyricsData(
-      trackName: trackName,
-      artistName: artistName,
-      lyrics: _generateMockLyrics(trackName),
-      syncedLyrics: _generateSyncedLyrics(trackName),
-      source: 'MusicBoxd',
-      url: null,
-    );
-  }
-
-  /// Generate synced lyrics (LRC format timestamp)
-  static List<SyncedLyric>? _generateSyncedLyrics(String trackName) {
-    return [
-      SyncedLyric(timestamp: Duration(seconds: 0), text: '[Verse 1]'),
-      SyncedLyric(timestamp: Duration(seconds: 2), text: 'This is the beginning of $trackName'),
-      SyncedLyric(timestamp: Duration(seconds: 6), text: 'A beautiful melody that flows through time'),
-      SyncedLyric(timestamp: Duration(seconds: 10), text: 'Every note, every word, perfectly aligned'),
-      SyncedLyric(timestamp: Duration(seconds: 14), text: 'In this moment, everything feels fine'),
-      SyncedLyric(timestamp: Duration(seconds: 18), text: ''),
-      SyncedLyric(timestamp: Duration(seconds: 20), text: '[Chorus]'),
-      SyncedLyric(timestamp: Duration(seconds: 22), text: '$trackName, oh $trackName'),
-      SyncedLyric(timestamp: Duration(seconds: 26), text: "You're the rhythm in my heart"),
-      SyncedLyric(timestamp: Duration(seconds: 30), text: '$trackName, sweet $trackName'),
-      SyncedLyric(timestamp: Duration(seconds: 34), text: 'Been with me right from the start'),
-      SyncedLyric(timestamp: Duration(seconds: 38), text: ''),
-      SyncedLyric(timestamp: Duration(seconds: 40), text: '[Verse 2]'),
-      SyncedLyric(timestamp: Duration(seconds: 42), text: 'As the music plays on and on'),
-      SyncedLyric(timestamp: Duration(seconds: 46), text: 'I find myself lost in your song'),
-      SyncedLyric(timestamp: Duration(seconds: 50), text: 'Every beat, every chord feels so strong'),
-      SyncedLyric(timestamp: Duration(seconds: 54), text: 'This is where I truly belong'),
-    ];
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final lyrics = data['lyrics'] as String?;
+        
+        if (lyrics != null && lyrics.isNotEmpty) {
+          return LyricsData(
+            trackName: trackName,
+            artistName: artistName,
+            lyrics: lyrics.trim(),
+            syncedLyrics: null,
+            source: 'Lyrist',
+            url: null,
+          );
+        }
+      }
+    } catch (e) {
+      print('Lyrist API error: $e');
+    }
+    return null;
   }
 
   /// Get cache key
