@@ -53,12 +53,21 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildFeedList(isDark, 'all'),
-          _buildFeedList(isDark, 'following'),
-          _buildFeedList(isDark, 'popular'),
+          // Now Playing Stories Section
+          _buildNowPlayingStories(isDark),
+          // Feed Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildFeedList(isDark, 'all'),
+                _buildFeedList(isDark, 'following'),
+                _buildFeedList(isDark, 'popular'),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -346,6 +355,122 @@ class _SocialFeedPageState extends ConsumerState<SocialFeedPage> with SingleTick
     } else {
       return DateFormat('dd MMM yyyy').format(timestamp);
     }
+  }
+
+  Widget _buildNowPlayingStories(bool isDark) {
+    final mockUsers = [
+      {'name': 'Furkan', 'track': 'Blinding Lights', 'isPlaying': true},
+      {'name': 'Ahmet', 'track': 'Levitating', 'isPlaying': true},
+      {'name': 'Zeynep', 'track': 'Save Your Tears', 'isPlaying': false},
+      {'name': 'Can', 'track': 'Good 4 U', 'isPlaying': true},
+      {'name': 'Elif', 'track': 'Peaches', 'isPlaying': false},
+    ];
+
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+          ),
+        ),
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: mockUsers.length,
+        itemBuilder: (context, index) {
+          final user = mockUsers[index];
+          return _buildNowPlayingStory(
+            user['name'] as String,
+            user['track'] as String,
+            user['isPlaying'] as bool,
+            isDark,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildNowPlayingStory(String name, String track, bool isPlaying, bool isDark) {
+    return Container(
+      width: 70,
+      margin: const EdgeInsets.only(right: 12),
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: isPlaying
+                      ? const LinearGradient(
+                          colors: [Color(0xFFFF5E5E), Color(0xFFFF8E8E)],
+                        )
+                      : null,
+                  border: Border.all(
+                    color: isPlaying
+                        ? Colors.transparent
+                        : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
+                    width: 2,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: CircleAvatar(
+                    backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+                    child: Text(
+                      name[0].toUpperCase(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (isPlaying)
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00D9FF),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: isDark ? Colors.grey[900]! : Colors.white,
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.music_note,
+                      size: 10,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 11,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 
   List<ActivityItem> _getMockActivities() {

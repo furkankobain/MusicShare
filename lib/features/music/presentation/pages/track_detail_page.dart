@@ -327,6 +327,10 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
                     _buildPlayButton(isDark),
                     const SizedBox(height: 32),
                     
+                    // Lyrics section
+                    _buildLyricsSection(isDark),
+                    const SizedBox(height: 32),
+                    
                     // Recommendations
                     TrackRecommendationsWidget(track: widget.track),
                     const SizedBox(height: 32),
@@ -763,6 +767,73 @@ class _TrackDetailPageState extends ConsumerState<TrackDetailPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLyricsSection(bool isDark) {
+    return Container(
+      decoration: isDark
+          ? ModernDesignSystem.darkGlassmorphism
+          : BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(ModernDesignSystem.radiusL),
+              boxShadow: ModernDesignSystem.mediumShadow,
+            ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.all(20),
+        title: Row(
+          children: [
+            Icon(
+              Icons.lyrics,
+              color: const Color(0xFFFF5E5E),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Lyrics',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Lyrics not available',
+                  style: TextStyle(
+                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    fontSize: 14,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    // TODO: Add lyrics API integration
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Lyrics feature coming soon!'),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Lyrics'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFF5E5E),
+                    side: const BorderSide(color: Color(0xFFFF5E5E)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

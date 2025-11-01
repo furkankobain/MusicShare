@@ -199,6 +199,9 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                   ),
                 ),
                 const SizedBox(height: 24),
+                // Hero Section
+                _buildHeroSection(isDark),
+                const SizedBox(height: 24),
                 // Hot New Releases Section
                 _buildHotNewReleasesSection(isDark),
                 const SizedBox(height: 24),
@@ -942,6 +945,100 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
               const SizedBox(width: 4),
               Text('0', style: TextStyle(fontSize: 12, color: Colors.grey[500])),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Hero Section
+  Widget _buildHeroSection(bool isDark) {
+    return Container(
+      height: 180,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF5E5E), Color(0xFFFF8E8E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF5E5E).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            top: -20,
+            child: Icon(
+              Icons.music_note,
+              size: 150,
+              color: Colors.white.withOpacity(0.1),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.trending_up,
+                  color: Colors.white,
+                  size: 32,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Trending Now',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Discover what\'s hot this week',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => context.push('/discover'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFFF5E5E),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Explore',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward, size: 18),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

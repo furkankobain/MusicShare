@@ -218,6 +218,57 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
 
                   const SizedBox(height: 12),
 
+                  // Quick Stats Cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickStatCard(
+                          'Listening Time',
+                          '${(_stats['totalListeningMinutes'] ?? 0) ~/ 60}h',
+                          Icons.access_time,
+                          const Color(0xFFFF5E5E),
+                          isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickStatCard(
+                          'This Week',
+                          '${_stats['weeklyTracks'] ?? 12}',
+                          Icons.trending_up,
+                          const Color(0xFF5A5AFF),
+                          isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickStatCard(
+                          'Top Genre',
+                          _stats['topGenre']?.toString() ?? 'Pop',
+                          Icons.category,
+                          const Color(0xFF00D9FF),
+                          isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickStatCard(
+                          'Avg Rating',
+                          '${(_stats['avgRating'] ?? 4.2).toStringAsFixed(1)}⭐',
+                          Icons.star,
+                          const Color(0xFFFFB800),
+                          isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
                   // Buttons Row
                   Row(
                     children: [
@@ -460,6 +511,55 @@ class _LetterboxdProfilePageState extends State<LetterboxdProfilePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickStatCard(String label, String value, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? ModernDesignSystem.darkCard : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 20, color: color),
+              ),
+              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
