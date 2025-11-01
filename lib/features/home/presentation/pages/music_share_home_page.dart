@@ -180,17 +180,27 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                         const SizedBox(width: 12),
                         Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
-                              color: Colors.grey[900],
-                              borderRadius: BorderRadius.circular(20),
+                              color: isDark ? Colors.grey[800] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(24),
                             ),
-                            child: const Text(
-                              'What have you been listening to?',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.search,
+                                  color: Colors.grey[500],
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Search music, artists, albums...',
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -198,10 +208,7 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                // Hero Section
-                _buildHeroSection(isDark),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 // Hot New Releases Section
                 _buildHotNewReleasesSection(isDark),
                 const SizedBox(height: 24),
@@ -986,30 +993,33 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(
                   Icons.trending_up,
                   color: Colors.white,
-                  size: 32,
+                  size: 28,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 6),
                 const Text(
                   'Trending Now',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 24,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   'Discover what\'s hot this week',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () => context.push('/discover'),
                   style: ElevatedButton.styleFrom(
@@ -1019,8 +1029,8 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
+                      horizontal: 20,
+                      vertical: 10,
                     ),
                   ),
                   child: const Row(
@@ -1030,10 +1040,11 @@ class _MusicShareHomePageState extends ConsumerState<MusicShareHomePage> with Si
                         'Explore',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
+                          fontSize: 13,
                         ),
                       ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 18),
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward, size: 16),
                     ],
                   ),
                 ),

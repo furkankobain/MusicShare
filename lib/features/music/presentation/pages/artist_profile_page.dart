@@ -5,6 +5,7 @@ import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/services/enhanced_spotify_service.dart';
 import '../../../../shared/services/lastfm_service.dart';
 import '../../../../shared/services/favorites_service.dart';
+import '../../../../shared/services/wikipedia_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ArtistProfilePage extends StatefulWidget {
@@ -27,6 +28,7 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
   List<Map<String, dynamic>> _albums = [];
   Map<String, dynamic>? _artistDetails;
   Map<String, dynamic>? _lastFmInfo;
+  Map<String, dynamic>? _wikiInfo;
   List<Map<String, dynamic>> _similarArtists = [];
   bool _isFavorite = false;
 
@@ -78,12 +80,13 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
       final artistId = widget.artist['id'] as String;
       final artistName = widget.artist['name'] as String;
 
-      // Load artist details, top tracks, albums, Last.fm info, and similar artists in parallel
+      // Load artist details, top tracks, albums, Last.fm info, Wikipedia info, and similar artists in parallel
       final results = await Future.wait([
         _getArtistDetails(artistId),
         _getArtistTopTracks(artistId),
         _getArtistAlbums(artistId),
         _getLastFmInfo(artistName),
+        _getWikipediaInfo(artistName),
         _getSimilarArtists(artistName),
       ]);
 
@@ -92,7 +95,8 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
         _topTracks = results[1] as List<Map<String, dynamic>>;
         _albums = results[2] as List<Map<String, dynamic>>;
         _lastFmInfo = results[3] as Map<String, dynamic>?;
-        _similarArtists = results[4] as List<Map<String, dynamic>>;
+        _wikiInfo = results[4] as Map<String, dynamic>?;
+        _similarArtists = results[5] as List<Map<String, dynamic>>;
         _isLoading = false;
       });
     } catch (e) {
@@ -139,6 +143,15 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
       return await LastFmService.getArtistInfo(artist: artistName);
     } catch (e) {
       print('Error loading Last.fm info: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> _getWikipediaInfo(String artistName) async {
+    try {
+      return await WikipediaService.getArtistInfo(artistName);
+    } catch (e) {
+      print('Error loading Wikipedia info: $e');
       return null;
     }
   }
@@ -488,7 +501,90 @@ class _ArtistProfilePageState extends State<ArtistProfilePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bio Section
+          // Wikipedia Bio Section
+          if (_wikiInfo != null && _wikiInfo!['extract'] != null) ...[
+            Row(
+              children: [
+                Text(
+                  'Biography',
+                  style: TextStyle(
+                    fontSize: ModernDesignSystem.fontSizeXL,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF5E5E).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Wikipedia',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFF5E5E),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey[850] : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isDark ? Colors.grey[800]! : Colors.grey[200]!,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _wikiInfo!['extract'] as String,
+                    style: TextStyle(
+                      fontSize: ModernDesignSystem.fontSizeM,
+                      color: isDark
+                          ? Colors.white.withOpacity(0.9)
+                          : Colors.black.withOpacity(0.9),
+                      height: 1.7,
+                    ),
+                  ),
+                  if (_wikiInfo!['pageUrl'] != null) ...[
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final url = _wikiInfo!['pageUrl'] as String;
+                        final uri = Uri.parse(url);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.open_in_new,
+                        size: 16,
+                        color: Color(0xFFFF5E5E),
+                      ),
+                      label: const Text(
+                        'Read more on Wikipedia',
+                        style: TextStyle(
+                          color: Color(0xFFFF5E5E),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+          
+          // Last.fm Bio Section
           if (_lastFmInfo != null && _lastFmInfo!['bio'] != null) ...[
             if (_lastFmInfo!['bio'] is Map && 
                 (_lastFmInfo!['bio'] as Map)['content'] != null) ...[

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../core/theme/modern_design_system.dart';
 import '../../../../shared/widgets/animations/enhanced_animations.dart';
@@ -106,13 +107,19 @@ class _SplashPageState extends ConsumerState<SplashPage>
     });
   }
 
-  void _navigateToNext() {
-    Future.delayed(const Duration(milliseconds: 4000), () {
-      if (mounted) {
+  void _navigateToNext() async {
+    await Future.delayed(const Duration(milliseconds: 4000));
+    if (mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+      
+      if (!onboardingCompleted) {
+        context.go('/onboarding');
+      } else {
         // Let GoRouter handle the navigation based on auth state
         context.go('/');
       }
-    });
+    }
   }
 
   @override

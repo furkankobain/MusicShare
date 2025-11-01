@@ -5,6 +5,7 @@ import 'dart:ui';
 import '../../../core/theme/modern_design_system.dart';
 import '../../services/mini_player_service.dart';
 import '../../services/haptic_service.dart';
+import '../../services/music_player_service.dart';
 
 class TrackCard extends StatefulWidget {
   final Map<String, dynamic> track;
@@ -27,6 +28,7 @@ class TrackCard extends StatefulWidget {
 class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMixin {
   bool _isHovered = false;
   bool _isFavorite = false;
+  bool _isCurrentlyPlaying = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
@@ -40,6 +42,16 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+    
+    // Listen to player state changes
+    MusicPlayerService.playerStateStream.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isCurrentlyPlaying = MusicPlayerService.currentTrackId == widget.track['id'] &&
+                                MusicPlayerService.isPlaying;
+        });
+      }
+    });
   }
 
   @override
@@ -54,6 +66,42 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
     final minutes = duration.inMinutes;
     final seconds = duration.inSeconds % 60;
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _handlePlayPause() async {
+    HapticService.mediumImpact();
+    
+    final previewUrl = widget.track['preview_url'] as String?;
+    
+    if (previewUrl == null || previewUrl.isEmpty) {
+      // Show snackbar if no preview available
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Preview not available for this track'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    final trackName = widget.track['name'] as String? ?? 'Unknown Track';
+    final artists = widget.track['artists'] as List?;
+    final artistNames = artists?.isNotEmpty == true
+        ? artists!.map((a) => a['name'] as String).join(', ')
+        : 'Unknown Artist';
+    final album = widget.track['album'] as Map<String, dynamic>?;
+    final images = album?['images'] as List?;
+    final imageUrl = images?.isNotEmpty == true ? images![0]['url'] as String? : null;
+    
+    await MusicPlayerService.playTrack(
+      trackId: widget.track['id'] as String,
+      previewUrl: previewUrl,
+      trackName: trackName,
+      artistName: artistNames,
+      imageUrl: imageUrl,
+    );
   }
 
   @override
@@ -159,17 +207,14 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
                         if (_isHovered)
                           Positioned.fill(
                             child: GestureDetector(
-                              onTap: () {
-                                HapticService.mediumImpact();
-                                MiniPlayerService().playTrack(widget.track);
-                              },
+                              onTap: _handlePlayPause,
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.black.withOpacity(0.5),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
-                                child: const Icon(
-                                  Icons.play_circle_filled,
+                                child: Icon(
+                                  _isCurrentlyPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
                                   color: Colors.white,
                                   size: 32,
                                 ),
@@ -236,6 +281,34 @@ class _TrackCardState extends State<TrackCard> with SingleTickerProviderStateMix
 
                   const SizedBox(width: 12),
 
+                  // Play/Pause Button
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _isCurrentlyPlaying
+                          ? ModernDesignSystem.accentPurple.withOpacity(0.1)
+                          : (isDark ? Colors.grey[800] : Colors.grey[200]),
+                      borderRadius: BorderRadius.circular(18),
+                      border: _isCurrentlyPlaying
+                          ? Border.all(color: ModernDesignSystem.accentPurple, width: 2)
+                          : null,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        _isCurrentlyPlaying ? Icons.pause : Icons.play_arrow,
+                        color: _isCurrentlyPlaying
+                            ? ModernDesignSystem.accentPurple
+                            : (isDark ? Colors.white : Colors.black),
+                        size: 20,
+                      ),
+                      onPressed: _handlePlayPause,
+                    ),
+                  ),
+
+                  const SizedBox(width: 8),
+                  
                   // Duration
                   Text(
                     _formatDuration(duration),

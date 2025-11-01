@@ -14,6 +14,7 @@ import 'shared/services/enhanced_auth_service.dart';
 import 'shared/services/simple_auth_service.dart';
 import 'shared/services/firebase_bypass_auth_service.dart';
 import 'shared/services/popular_tracks_seed_service.dart';
+import 'shared/services/music_player_service.dart';
 import 'features/auth/presentation/pages/enhanced_login_page.dart';
 import 'features/auth/presentation/pages/enhanced_signup_page.dart';
 import 'features/auth/presentation/pages/spotify_connect_page.dart';
@@ -40,6 +41,7 @@ import 'features/legal/presentation/pages/terms_of_service_page.dart';
 import 'features/legal/presentation/pages/privacy_policy_page.dart';
 import 'shared/services/app_rating_service.dart';
 import 'features/splash/presentation/pages/splash_page.dart';
+import 'features/onboarding/presentation/pages/onboarding_page.dart';
 import 'features/home/presentation/pages/modern_home_page.dart';
 import 'features/social/presentation/pages/social_feed_page.dart';
 import 'features/social/presentation/pages/user_profile_page.dart';
@@ -65,6 +67,7 @@ import 'features/playlists/discover_playlists_page.dart';
 import 'features/playlists/qr_scanner_page.dart';
 import 'features/playlists/smart_playlists_page.dart';
 import 'features/messaging/conversations_page.dart';
+import 'features/create/presentation/pages/create_content_page.dart';
 import 'shared/models/music_list.dart';
 import 'shared/widgets/mini_player/mini_player.dart';
 
@@ -83,6 +86,9 @@ void main() async {
   
   // Initialize Enhanced Spotify Service
   await EnhancedSpotifyService.loadConnectionState();
+  
+  // Initialize Music Player Service
+  await MusicPlayerService.initialize();
   
   // Initialize popular tracks seed (background, don't wait)
   PopularTracksSeedService.initializeSeed();
@@ -139,6 +145,11 @@ final _router = GoRouter(
       path: '/splash',
       name: 'splash',
       builder: (context, state) => const SplashPage(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      name: 'onboarding',
+      builder: (context, state) => const OnboardingPage(),
     ),
     GoRoute(
       path: '/login',
@@ -430,7 +441,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const MusicShareHomePage(),
     const DiscoverPage(),
-    const UserPlaylistsPage(),
+    const CreateContentPage(),
     const ConversationsPage(),
     const LetterboxdProfilePage(),
   ];
@@ -455,6 +466,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         type: BottomNavigationBarType.fixed,
         selectedFontSize: 12,
         unselectedFontSize: 10,
+        selectedItemColor: const Color(0xFFFF5E5E),
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -465,8 +478,8 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Discover',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.library_music),
-            label: 'Playlists',
+            icon: Icon(Icons.add_circle, size: 32),
+            label: 'Create',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
